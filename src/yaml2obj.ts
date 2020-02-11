@@ -11,9 +11,10 @@ const dummy = [
 ];
 
 type Remark = {
+  pass: string;
   type: string;
   name: string;
-  debugLoc: { File: string; Line: number; Column: number };
+  debugLoc?: { File: string; Line: number; Column: number };
   fn: string;
   args: object[];
 };
@@ -26,10 +27,17 @@ export function yaml2obj(yaml: string[]): Remark {
       const type = curr.split("!")[1].trim();
       return { ...acc, type };
     }
+
+    if (curr.startsWith("Pass:")) {
+      const pass = curr.split(":")[1].trim();
+      return { ...acc, pass };
+    }
+
     if (curr.startsWith("Name:")) {
       const name = curr.split(":")[1].trim();
       return { ...acc, name };
     }
+
     if (curr.startsWith("DebugLoc:")) {
       const debugLoc = curr
         .slice(9)
@@ -70,5 +78,3 @@ export function yaml2obj(yaml: string[]): Remark {
   }
   return yaml.reduce(reducer, {});
 }
-
-console.log(yaml2obj(dummy));

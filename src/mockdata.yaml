@@ -1,4 +1,4 @@
-export const mockLines = `--- !Passed
+--- !Passed
 Pass:            licm
 Name:            InstSunk
 DebugLoc:        { File: code.c, Line: 5, Column: 15 }
@@ -155,4 +155,4 @@ Function:        main
 Args:
   - NumInstructions: '20'
   - String:          ' instructions in function'
-...`.split("\n");
+...
