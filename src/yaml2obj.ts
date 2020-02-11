@@ -68,3 +68,5 @@ export function yaml2obj(yaml: string[]): Remark {
   }
   return yaml.reduce(reducer, {});
 }
+
+console.log(yaml2obj(dummy));
