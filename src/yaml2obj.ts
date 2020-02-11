@@ -10,7 +10,7 @@ const dummy = [
   "..."
 ];
 
-type Remark = {
+export type Remark = {
   pass: string;
   type: string;
   name: string;
