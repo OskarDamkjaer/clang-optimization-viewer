@@ -13,9 +13,9 @@ const dummy = [
 type Remark = {
   type: string;
   name: string;
-  debugLoc: string;
+  debugLoc: { File: string; Line: number; Column: number };
   fn: string;
-  args: string[];
+  args: object[];
 };
 
 export function yaml2obj(yaml: string[]): Remark {
@@ -37,7 +37,9 @@ export function yaml2obj(yaml: string[]): Remark {
         .replace(/{|}/g, "")
         .split(",")
         .map(s => s.split(":").map(s => s.trim()))
-        .map(([key, val]) => ({ [key]: val }))
+        .map(([key, val]) => ({
+          [key]: /^\d+$/.test(val) ? parseInt(val, 10) : val
+        }))
         .reduce((acc, curr) => ({ ...acc, ...curr }), {});
 
       return { ...acc, debugLoc };
