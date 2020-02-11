@@ -10,13 +10,15 @@ const dummy = [
   "..."
 ];
 
+export type RemarkType = "Missed" | "Passed" | "Analysis";
+
 export type Remark = {
   pass: string;
-  type: string;
+  type: RemarkType;
   name: string;
   debugLoc?: { File: string; Line: number; Column: number };
   fn: string;
-  args: object[];
+  args: [string, string][];
 };
 
 export function yaml2obj(yaml: string[]): Remark {
@@ -62,12 +64,14 @@ export function yaml2obj(yaml: string[]): Remark {
     }
 
     if (curr.startsWith("-")) {
-      const [key, val] = curr
+      const pair = curr
         .slice(2)
         .split(":")
         .map(s => s.trim());
-      const newArg = { [key]: val };
-      return { ...acc, args: acc.args ? acc.args.concat(newArg) : [newArg] };
+      return {
+        ...acc,
+        args: acc.args ? acc.args.concat([pair]) : [pair]
+      };
     }
 
     if (curr.startsWith("...")) {

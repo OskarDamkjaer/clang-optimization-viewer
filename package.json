@@ -16,12 +16,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "extension.opt",
-        "title": "opt"
-      },
-      {
-        "command": "extension.helloWorld",
-        "title": "Hello World"
+        "command": "extension.optInfo",
+        "title": "Show Optimization Information"
       }
     ]
   },
