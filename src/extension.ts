@@ -60,37 +60,59 @@ async function parseStream(
   collection.set(documentUri, diagnostics);
 }
 
-export function activate(context: vscode.ExtensionContext) {
+function showRemarks(issues: vscode.DiagnosticCollection) {
   const fileName = vscode.window.activeTextEditor?.document.fileName;
-  if (!fileName) {
+
+  if (
+    !fileName ||
+    ![".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"].some(ending =>
+      fileName.toLowerCase().endsWith(ending)
+    )
+  ) {
     vscode.window.showErrorMessage(
-      "Make sure there's a file opened before running this command"
+      "Make sure there's a c or cpp file open when running this command"
     );
+    return;
   }
 
-  const issues = vscode.languages.createDiagnosticCollection("opt-info");
-  let disposable = vscode.commands.registerCommand("extension.optInfo", () => {
-    issues.clear();
-    const clangPs = spawn(
-      `${compiler} ${
-        vscode.window.activeTextEditor!.document.fileName
-      } ${flags}`,
-      { shell: "bash" }
-    );
-
-    parseStream(clangPs.stdout, issues);
-
-    clangPs.stderr.on("data", data => {
-      vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
-    });
-
-    clangPs.on("close", code => {
-      code !== 0 &&
-        vscode.window.showErrorMessage(`Clang exited with code: ${code}`);
-    });
+  issues.clear();
+  const clangPs = spawn(`${compiler} ${fileName} ${flags}`, {
+    shell: "bash"
   });
 
-  context.subscriptions.push(disposable);
+  parseStream(clangPs.stdout, issues);
+  clangPs.stderr.on("data", data => {
+    vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
+  });
+  clangPs.on("close", code => {
+    code !== 0 &&
+      vscode.window.showErrorMessage(`Clang exited with code: ${code}`);
+  });
+}
+
+function addCodeLens() {
+  vscode.commands
+    .executeCommand<vscode.DocumentSymbol[]>(
+      "vscode.executeDocumentSymbolProvider",
+      vscode.window.activeTextEditor?.document?.uri
+    )
+    .then(console.log);
+}
+
+export function activate(context: vscode.ExtensionContext) {
+  const issues = vscode.languages.createDiagnosticCollection("opt-info");
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.showRemarks", () =>
+      showRemarks(issues)
+    )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.hideRemarks", () =>
+      issues.clear()
+    )
+  );
+  // add right click action
+  addCodeLens();
 }
 
 export function deactivate() {}

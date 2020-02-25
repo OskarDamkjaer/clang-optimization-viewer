@@ -16,8 +16,12 @@
   "contributes": {
     "commands": [
       {
-        "command": "extension.optInfo",
-        "title": "Show Optimization Information"
+        "command": "extension.showRemarks",
+        "title": "Opt Info: Show all optimization remarks"
+      },
+      {
+        "command": "extension.hideRemarks",
+        "title": "Opt Info: Hide all remarks"
       }
     ]
   },

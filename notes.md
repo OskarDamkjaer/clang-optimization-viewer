@@ -7,4 +7,6 @@ codelens är det vi vill ha för att lgga in pragmas. https://github.com/microso
 run on save och ha på toggl commando
 jämf opt viewer features
 
-operate only on clang files
+command: when not working
+
+peer dependency med lsp
