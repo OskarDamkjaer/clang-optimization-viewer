@@ -52,7 +52,7 @@ export function yaml2obj(yaml: string[]): Remark {
         }))
         .reduce((acc, curr) => ({ ...acc, ...curr }), {});
 
-      return { ...acc, debugLoc };
+      return { ...acc, debugLoc: debugLoc };
     }
     if (curr.startsWith("Function:")) {
       const fn = curr.split(":")[1].trim();

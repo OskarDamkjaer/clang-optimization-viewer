@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
 import { spawn } from "child_process";
-import { createInterface, ReadLine } from "readline";
+import { createInterface } from "readline";
 import { Readable } from "stream";
-import { Remark, RemarkType, yaml2obj } from "./yaml2obj";
-const clangbin = "$HOME/thesis-llvm/build/bin/clang";
+import { Remark, yaml2obj } from "./yaml2obj";
+
+const compiler = "clang"; //"$HOME/thesis-llvm/build/bin/clang";
 const flags = "-c -o /dev/null -O3 -foptimization-record-file=>(cat)";
 
 async function gatherRemarks(input: Readable): Promise<Remark[]> {
@@ -23,17 +24,6 @@ async function gatherRemarks(input: Readable): Promise<Remark[]> {
   return remarks;
 }
 
-function severity(remarkType: RemarkType): vscode.DiagnosticSeverity {
-  switch (remarkType) {
-    case "Passed":
-      return vscode.DiagnosticSeverity.Information;
-    case "Analysis":
-      return vscode.DiagnosticSeverity.Hint;
-    case "Missed":
-      return vscode.DiagnosticSeverity.Warning;
-  }
-}
-
 async function parseStream(
   input: Readable,
   collection: vscode.DiagnosticCollection
@@ -46,12 +36,17 @@ async function parseStream(
       Math.max(0, Column - 1)
     );
     const range = new vscode.Range(pos, pos);
+    const severity = {
+      Passed: vscode.DiagnosticSeverity.Information,
+      Analysis: vscode.DiagnosticSeverity.Hint,
+      Missed: vscode.DiagnosticSeverity.Warning
+    };
 
     return {
       code: "",
       message: `${remark.type}: ${remark.pass}`,
       range,
-      severity: severity(remark.type),
+      severity: severity[remark.type],
       source: "",
       relatedInformation: [
         new vscode.DiagnosticRelatedInformation(
@@ -64,27 +59,34 @@ async function parseStream(
 
   collection.set(documentUri, diagnostics);
 }
-// require there to be open file to run
 
 export function activate(context: vscode.ExtensionContext) {
+  const fileName = vscode.window.activeTextEditor?.document.fileName;
+  if (!fileName) {
+    vscode.window.showErrorMessage(
+      "Make sure there's a file opened before running this command"
+    );
+  }
+
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
   let disposable = vscode.commands.registerCommand("extension.optInfo", () => {
     issues.clear();
     const clangPs = spawn(
-      `clang -c ${
+      `${compiler} ${
         vscode.window.activeTextEditor!.document.fileName
-      } -o /dev/null -O3 -foptimization-record-file=>(cat)`,
+      } ${flags}`,
       { shell: "bash" }
     );
+
     parseStream(clangPs.stdout, issues);
 
     clangPs.stderr.on("data", data => {
-      // send info could not compile
-      console.log(`stderr: ${data}`);
+      vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
     });
 
     clangPs.on("close", code => {
-      code !== 0 && console.log(`child process exited with code ${code}`);
+      code !== 0 &&
+        vscode.window.showErrorMessage(`Clang exited with code: ${code}`);
     });
   });
 
