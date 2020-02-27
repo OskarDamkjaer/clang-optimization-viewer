@@ -3,7 +3,9 @@ import { spawn } from "child_process";
 import { createInterface } from "readline";
 import { Readable } from "stream";
 import { Remark, yaml2obj } from "./yaml2obj";
+import { CodelensProvider } from "./CodelensProvider";
 
+const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
 const compiler = "clang"; //"$HOME/thesis-llvm/build/bin/clang";
 const flags = "-c -o /dev/null -O3 -foptimization-record-file=>(cat)";
 
@@ -65,9 +67,7 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
 
   if (
     !fileName ||
-    ![".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"].some(ending =>
-      fileName.toLowerCase().endsWith(ending)
-    )
+    !fileExtensions.some(ending => fileName.toLowerCase().endsWith(ending))
   ) {
     vscode.window.showErrorMessage(
       "Make sure there's a c or cpp file open when running this command"
@@ -90,15 +90,6 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
   });
 }
 
-function addCodeLens() {
-  vscode.commands
-    .executeCommand<vscode.DocumentSymbol[]>(
-      "vscode.executeDocumentSymbolProvider",
-      vscode.window.activeTextEditor?.document?.uri
-    )
-    .then(console.log);
-}
-
 export function activate(context: vscode.ExtensionContext) {
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
   context.subscriptions.push(
@@ -111,6 +102,12 @@ export function activate(context: vscode.ExtensionContext) {
       issues.clear()
     )
   );
-  addCodeLens();
+
+  vscode.languages.registerCodeLensProvider(
+    "*",
+    //["c", "cpp"],
+    new CodelensProvider()
+  );
 }
+
 export function deactivate() {}
