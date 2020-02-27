@@ -111,8 +111,6 @@ export function activate(context: vscode.ExtensionContext) {
       issues.clear()
     )
   );
-  // add right click action
   addCodeLens();
 }
-
 export function deactivate() {}
