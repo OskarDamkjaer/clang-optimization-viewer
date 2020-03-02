@@ -104,8 +104,10 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   vscode.languages.registerCodeLensProvider(
-    "*",
-    //["c", "cpp"],
+    [
+      { scheme: "file", language: "c" },
+      { scheme: "file", language: "cpp" }
+    ],
     new CodelensProvider()
   );
 }
