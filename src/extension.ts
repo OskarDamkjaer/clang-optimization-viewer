@@ -6,10 +6,10 @@ import { Remark, yaml2obj } from "./yaml2obj";
 import { CodelensProvider } from "./CodelensProvider";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
-const compiler = "clang"; //"$HOME/thesis-llvm/build/bin/clang";
+const compiler = "/Users/Catarina/clang/bin/clang"; //"clang"; //"$HOME/thesis-llvm/build/bin/clang";
 const flags = "-c -o /dev/null -O3 -foptimization-record-file=>(cat)";
-let issues = [];
-function issuesToDiagnostics() {}
+
+let remarks = [];
 
 async function gatherRemarks(input: Readable): Promise<Remark[]> {
   const rl = createInterface({ input });
@@ -28,12 +28,11 @@ async function gatherRemarks(input: Readable): Promise<Remark[]> {
   return remarks;
 }
 
-async function parseStream(
-  input: Readable,
-  collection: vscode.DiagnosticCollection
-): Promise<void> {
-  const documentUri = vscode.window.activeTextEditor!.document.uri;
-  const diagnostics = (await gatherRemarks(input)).map(remark => {
+function remarkToDiagnostic(
+  doc: vscode.TextDocument,
+  remarks: Remark[]
+): vscode.Diagnostic[] {
+  return remarks.map(remark => {
     const { Line, Column } = remark.debugLoc! || { Line: 0, Column: 0 };
     const pos = new vscode.Position(
       Math.max(0, Line - 1),
@@ -54,35 +53,34 @@ async function parseStream(
       source: "",
       relatedInformation: [
         new vscode.DiagnosticRelatedInformation(
-          new vscode.Location(documentUri, range),
+          new vscode.Location(doc.uri, range),
           remark.args.map(([_key, value]) => value).join(" ")
         )
       ]
     };
   });
-
-  collection.set(documentUri, diagnostics);
 }
 
-function showRemarks(issues: vscode.DiagnosticCollection) {
-  const fileName = vscode.window.activeTextEditor?.document.fileName;
+function getDocumentOrWarn(): vscode.TextDocument | null {
+  const doc = vscode.window.activeTextEditor?.document;
 
   if (
-    !fileName ||
-    !fileExtensions.some(ending => fileName.toLowerCase().endsWith(ending))
+    doc &&
+    fileExtensions.some(ending => doc.fileName.toLowerCase().endsWith(ending))
   ) {
+    return doc;
+  } else {
     vscode.window.showErrorMessage(
       "Make sure there's a c or cpp file open when running this command"
     );
-    return;
+    return null;
   }
+}
 
-  issues.clear();
-  const clangPs = spawn(`${compiler} ${fileName} ${flags}`, {
+async function populateRemarks(doc: vscode.TextDocument): Promise<Remark[]> {
+  const clangPs = spawn(`${compiler} ${doc.fileName} ${flags}`, {
     shell: "bash"
   });
-
-  parseStream(clangPs.stdout, issues);
   clangPs.stderr.on("data", data => {
     vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
   });
@@ -90,6 +88,20 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
     code !== 0 &&
       vscode.window.showErrorMessage(`Clang exited with code: ${code}`);
   });
+  remarks = await gatherRemarks(clangPs.stdout);
+  return remarks;
+}
+
+function showRemarks(issues: vscode.DiagnosticCollection) {
+  const doc = getDocumentOrWarn();
+  if (!doc) {
+    return;
+  }
+
+  issues.clear();
+  populateRemarks(doc)
+    .then(r => remarkToDiagnostic(doc, r))
+    .then(diagnostics => issues.set(doc.uri, diagnostics));
 }
 
 export function activate(context: vscode.ExtensionContext) {
