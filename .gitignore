@@ -1,6 +1,5 @@
 out
 node_modules
 .vscode-test/
-.vscode/
 *.vsix
 notes.md

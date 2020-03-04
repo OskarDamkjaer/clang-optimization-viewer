@@ -8,6 +8,8 @@ import { CodelensProvider } from "./CodelensProvider";
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
 const compiler = "clang"; //"$HOME/thesis-llvm/build/bin/clang";
 const flags = "-c -o /dev/null -O3 -foptimization-record-file=>(cat)";
+let issues = [];
+function issuesToDiagnostics() {}
 
 async function gatherRemarks(input: Readable): Promise<Remark[]> {
   const rl = createInterface({ input });
