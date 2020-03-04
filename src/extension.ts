@@ -93,14 +93,25 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
 export function activate(context: vscode.ExtensionContext) {
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.showRemarks", () =>
-      showRemarks(issues)
-    )
+    vscode.commands.registerCommand("extension.showRemarks", () => {
+      showRemarks(issues);
+    })
   );
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.hideRemarks", () =>
       issues.clear()
     )
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.addLoopPragma", range => {
+      console.log("loop", range);
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("extension.addFunctionPragma", range => {
+      console.log("fn", range);
+    })
   );
 
   vscode.languages.registerCodeLensProvider(

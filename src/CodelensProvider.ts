@@ -1,22 +1,36 @@
 import * as vscode from "vscode";
 
 export class CodelensProvider implements vscode.CodeLensProvider {
-  provideCodeLenses(
+  async provideCodeLenses(
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
-  ): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
-    const topOfDocument = new vscode.Range(0, 0, 0, 0);
-    const c: vscode.Command = {
-      command: "extension.addConsoleLog",
-      title: "Insert console.log"
+  ): Promise<vscode.CodeLens[]> {
+    const loopCommand: vscode.Command = {
+      command: "extension.addLoopPragma",
+      title: "loop"
     };
-    const codeLens = new vscode.CodeLens(topOfDocument, c);
+
+    const fnCommand: vscode.Command = {
+      command: "extension.addFunctionPragma",
+      title: "function"
+    };
+    const symbols = (await vscode.commands.executeCommand(
+      "vscode.executeDocumentSymbolProvider",
+      vscode.window.activeTextEditor?.document.uri
+    )) as [vscode.DocumentSymbol];
+
+    const fnLenses = symbols
+      .filter(s => s.kind === vscode.SymbolKind.Function)
+      .map(
+        s =>
+          new vscode.CodeLens(s.range, { ...fnCommand, arguments: [s.range] })
+      );
 
     const regexSrc = /(for\s*\(|while\s*\()/g;
     const regex = new RegExp(regexSrc);
     const text = document.getText();
     let matches;
-    let codeLenses: vscode.CodeLens[] = [codeLens];
+    let codeLenses: vscode.CodeLens[] = [...fnLenses];
 
     while ((matches = regex.exec(text)) !== null) {
       const line = document.lineAt(document.positionAt(matches.index).line);
@@ -27,7 +41,9 @@ export class CodelensProvider implements vscode.CodeLensProvider {
         new RegExp(regexSrc)
       );
       if (range) {
-        codeLenses = codeLenses.concat(new vscode.CodeLens(range, c));
+        codeLenses = codeLenses.concat(
+          new vscode.CodeLens(range, { ...loopCommand, arguments: [range] })
+        );
       }
     }
     return codeLenses;
