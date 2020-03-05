@@ -38,6 +38,7 @@ function remarkToDiagnostic(
       Math.max(0, Line - 1),
       Math.max(0, Column - 1)
     );
+
     const range = new vscode.Range(pos, pos);
     const severity = {
       Passed: vscode.DiagnosticSeverity.Information,
@@ -105,6 +106,8 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  // DOESN't START
+
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.showRemarks", () => {
@@ -116,9 +119,18 @@ export function activate(context: vscode.ExtensionContext) {
       issues.clear()
     )
   );
+
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addLoopPragma", range => {
-      console.log("loop", range);
+    vscode.commands.registerCommand("extension.addLoopRemarks", async range => {
+      const doc = getDocumentOrWarn();
+      if (!doc) {
+        return;
+      }
+
+      const remarks = (await populateRemarks(doc)).filter(r => r);
+      const diagnostics = remarkToDiagnostic(doc, remarks);
+
+      issues.set(doc.uri, diagnostics);
     })
   );
 
@@ -127,7 +139,6 @@ export function activate(context: vscode.ExtensionContext) {
       console.log("fn", range);
     })
   );
-
   vscode.languages.registerCodeLensProvider(
     [
       { scheme: "file", language: "c" },
