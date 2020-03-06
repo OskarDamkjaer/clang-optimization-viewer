@@ -7,12 +7,12 @@ export class CodelensProvider implements vscode.CodeLensProvider {
   ): Promise<vscode.CodeLens[]> {
     try {
       const loopCommand: vscode.Command = {
-        command: "extension.addLoopRemarks",
+        command: "extension.addLoopRemark",
         title: "loop"
       };
 
       const fnCommand: vscode.Command = {
-        command: "extension.addFunctionPragma",
+        command: "extension.addFunctionRemark",
         title: "function"
       };
       const uri = vscode.window.activeTextEditor?.document.uri;

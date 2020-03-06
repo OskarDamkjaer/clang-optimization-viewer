@@ -4,9 +4,10 @@ import { createInterface } from "readline";
 import { Readable } from "stream";
 import { Remark, yaml2obj } from "./yaml2obj";
 import { CodelensProvider } from "./CodelensProvider";
+import { getVSCodeDownloadUrl } from "vscode-test/out/util";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
-const compiler = "/Users/Catarina/clang/bin/clang"; //"clang"; //"$HOME/thesis-llvm/build/bin/clang";
+const compiler = "clang"; //"/Users/Catarina/clang/bin/clang"; //"clang"; //"$HOME/thesis-llvm/build/bin/clang";
 const flags = "-c -o /dev/null -O3 -foptimization-record-file=>(cat)";
 
 let remarks = [];
@@ -106,8 +107,6 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  // DOESN't START
-
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.showRemarks", () => {
@@ -120,24 +119,51 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
+  async function handleCodeLens(range: vscode.Range): Promise<void> {
+    const ALL = "All remarks";
+    const doc = getDocumentOrWarn();
+    if (!doc) {
+      return;
+    }
+
+    const remarks = await populateRemarks(doc);
+    // todo double check line math
+    const remarksInScope = remarks
+      .filter(r => r.debugLoc)
+      .filter(r =>
+        range.contains(
+          new vscode.Position(r.debugLoc!.Line, r.debugLoc!.Column)
+        )
+      );
+    const options = [ALL].concat(uniq(remarksInScope.map(r => r.pass)));
+    // todo handle no remarks
+    //& clear on save
+    // todo add "All"
+    // only relevant on loop
+    const chosen: string = (await vscode.window.showQuickPick(options)) || ALL;
+    const relevantRemarks =
+      chosen === ALL
+        ? remarksInScope
+        : remarksInScope.filter(r => r.pass === chosen);
+
+    // TODO filters
+    // do stuff when click on codelens
+    // switch to real yamler
+    // use loop location compiler
+    const diagnostics = remarkToDiagnostic(doc, relevantRemarks);
+
+    issues.set(doc.uri, diagnostics);
+  }
+
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addLoopRemarks", async range => {
-      const doc = getDocumentOrWarn();
-      if (!doc) {
-        return;
-      }
-
-      const remarks = (await populateRemarks(doc)).filter(r => r);
-      const diagnostics = remarkToDiagnostic(doc, remarks);
-
-      issues.set(doc.uri, diagnostics);
-    })
+    vscode.commands.registerCommand("extension.addLoopRemark", handleCodeLens)
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addFunctionPragma", range => {
-      console.log("fn", range);
-    })
+    vscode.commands.registerCommand(
+      "extension.addFunctionRemark",
+      handleCodeLens
+    )
   );
   vscode.languages.registerCodeLensProvider(
     [
@@ -146,6 +172,9 @@ export function activate(context: vscode.ExtensionContext) {
     ],
     new CodelensProvider()
   );
+}
+function uniq(list: any[]) {
+  return Array.from(new Set(list));
 }
 
 export function deactivate() {}
