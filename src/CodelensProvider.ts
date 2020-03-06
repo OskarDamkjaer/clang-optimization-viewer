@@ -25,7 +25,9 @@ export class CodelensProvider implements vscode.CodeLensProvider {
       >("vscode.executeDocumentSymbolProvider", uri);
 
       if (!symbols) {
-        // todo give message about missing lang support
+        vscode.window.showErrorMessage(
+          "Make sure you have language support for c/c++ when running this extension"
+        );
         return [];
       }
 

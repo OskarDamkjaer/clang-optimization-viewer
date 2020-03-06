@@ -4,13 +4,12 @@ import { createInterface } from "readline";
 import { Readable } from "stream";
 import { Remark, yaml2obj } from "./yaml2obj";
 import { CodelensProvider } from "./CodelensProvider";
-import { getVSCodeDownloadUrl } from "vscode-test/out/util";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
-const compiler = "clang"; //"/Users/Catarina/clang/bin/clang"; //"clang"; //"$HOME/thesis-llvm/build/bin/clang";
+//const compiler = "clang";
+const compiler = "$HOME/thesis-llvm/build/bin/clang";
+//const compiler = "Users/Catarina/clang/bin/clang";
 const flags = "-c -o /dev/null -O3 -foptimization-record-file=>(cat)";
-
-let remarks = [];
 
 async function gatherRemarks(input: Readable): Promise<Remark[]> {
   const rl = createInterface({ input });
@@ -21,6 +20,7 @@ async function gatherRemarks(input: Readable): Promise<Remark[]> {
     currentRemark.push(line);
 
     if (line === "...") {
+      console.log(currentRemark);
       const remark = yaml2obj(currentRemark);
       remarks.push(remark);
       currentRemark = [];
@@ -79,7 +79,7 @@ function getDocumentOrWarn(): vscode.TextDocument | null {
   }
 }
 
-async function populateRemarks(doc: vscode.TextDocument): Promise<Remark[]> {
+function populateRemarks(doc: vscode.TextDocument): Promise<Remark[]> {
   const clangPs = spawn(`${compiler} ${doc.fileName} ${flags}`, {
     shell: "bash"
   });
@@ -87,11 +87,9 @@ async function populateRemarks(doc: vscode.TextDocument): Promise<Remark[]> {
     vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
   });
   clangPs.on("close", code => {
-    code !== 0 &&
-      vscode.window.showErrorMessage(`Clang exited with code: ${code}`);
+    /* already sent an error message */
   });
-  remarks = await gatherRemarks(clangPs.stdout);
-  return remarks;
+  return gatherRemarks(clangPs.stdout);
 }
 
 function showRemarks(issues: vscode.DiagnosticCollection) {
@@ -121,35 +119,36 @@ export function activate(context: vscode.ExtensionContext) {
 
   async function handleCodeLens(range: vscode.Range): Promise<void> {
     const ALL = "All remarks";
+    const NONE = "No remarks found in range";
     const doc = getDocumentOrWarn();
     if (!doc) {
       return;
     }
 
     const remarks = await populateRemarks(doc);
-    // todo double check line math
     const remarksInScope = remarks
       .filter(r => r.debugLoc)
       .filter(r =>
         range.contains(
-          new vscode.Position(r.debugLoc!.Line, r.debugLoc!.Column)
+          new vscode.Position(r.debugLoc!.Line + 1, r.debugLoc!.Column + 1)
         )
       );
-    const options = [ALL].concat(uniq(remarksInScope.map(r => r.pass)));
-    // todo handle no remarks
-    //& clear on save
-    // todo add "All"
-    // only relevant on loop
-    const chosen: string = (await vscode.window.showQuickPick(options)) || ALL;
+
+    const possibleRemarks = uniq(remarksInScope.map(r => r.pass));
+
+    const chosen = await vscode.window.showQuickPick(
+      [possibleRemarks.length === 0 ? NONE : ALL].concat(possibleRemarks)
+    );
+
+    if (!chosen || chosen === NONE) {
+      return;
+    }
+
     const relevantRemarks =
       chosen === ALL
         ? remarksInScope
         : remarksInScope.filter(r => r.pass === chosen);
 
-    // TODO filters
-    // do stuff when click on codelens
-    // switch to real yamler
-    // use loop location compiler
     const diagnostics = remarkToDiagnostic(doc, relevantRemarks);
 
     issues.set(doc.uri, diagnostics);
@@ -173,6 +172,7 @@ export function activate(context: vscode.ExtensionContext) {
     new CodelensProvider()
   );
 }
+
 function uniq(list: any[]) {
   return Array.from(new Set(list));
 }

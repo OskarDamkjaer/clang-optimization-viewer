@@ -1,15 +1,3 @@
-const dummy = [
-  "--- !Analysis",
-  "Pass:            asm-printer",
-  "Name:            InstructionCount",
-  "DebugLoc:        { File: 'opt-info/test/code.c', Line: 1, Column: 0 }",
-  "Function:        main",
-  "Args:",
-  "- NumInstructions: '20'",
-  "- String:          ' instructions in function",
-  "..."
-];
-
 export type RemarkType = "Missed" | "Passed" | "Analysis";
 
 export type Remark = {
@@ -22,7 +10,6 @@ export type Remark = {
 };
 
 export function yaml2obj(yaml: string[]): Remark {
-  // todo proper reqursive parser/lib?
   function reducer(acc: any, c: string): any {
     const curr = c.replace(/'/g, "");
     if (curr.startsWith("---")) {
