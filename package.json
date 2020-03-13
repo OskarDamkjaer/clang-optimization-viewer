@@ -2,10 +2,14 @@
   "name": "opt-info",
   "displayName": "opt-info",
   "description": "",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "damkjaer",
   "engines": {
-    "vscode": "^1.41.0" }, "categories": [ "Other" ],
+    "vscode": "^1.41.0"
+  },
+  "categories": [
+    "Other"
+  ],
   "activationEvents": [
     "onLanguage:cpp",
     "onLanguage:c"
