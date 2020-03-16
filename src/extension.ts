@@ -20,7 +20,6 @@ async function gatherRemarks(input: Readable): Promise<Remark[]> {
     currentRemark.push(line);
 
     if (line === "...") {
-      console.log(currentRemark);
       const remark = yaml2obj(currentRemark);
       remarks.push(remark);
       currentRemark = [];
@@ -126,13 +125,18 @@ export function activate(context: vscode.ExtensionContext) {
     }
 
     const remarks = await populateRemarks(doc);
-    const remarksInScope = remarks
-      .filter(r => r.debugLoc)
-      .filter(r =>
-        range.contains(
-          new vscode.Position(r.debugLoc!.Line + 1, r.debugLoc!.Column + 1)
-        )
-      );
+
+    const remarksInScope = remarks.filter(r => {
+      if (r.loopLocation) {
+        return r.loopLocation.Line === range.start.line + 1;
+      }
+      if (r.debugLoc) {
+        return range.contains(
+          new vscode.Position(r.debugLoc.Line + 1, r.debugLoc.Column + 1)
+        );
+      }
+      return false;
+    });
 
     const possibleRemarks = uniq(remarksInScope.map(r => r.pass));
 

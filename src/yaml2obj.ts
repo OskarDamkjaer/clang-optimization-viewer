@@ -4,6 +4,7 @@ export type Remark = {
   pass: string;
   type: RemarkType;
   name: string;
+  loopLocation?: { Line: number; Column: number };
   debugLoc?: { File: string; Line: number; Column: number };
   fn: string;
   args: [string, string][];
@@ -51,6 +52,19 @@ export function yaml2obj(yaml: string[]): Remark {
     }
 
     if (curr.startsWith("-")) {
+      if (curr.includes("LoopLocation:")) {
+        const [_file, line, col] = curr
+          .split("LoopLocation:")[1]
+          .trim()
+          .replace(/\'|\"/g, "")
+          .split(":");
+
+        return {
+          ...acc,
+          loopLocation: { Line: parseInt(line, 10), Column: parseInt(col, 10) }
+        };
+      }
+
       const pair = curr
         .slice(2)
         .split(":")
