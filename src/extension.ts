@@ -6,9 +6,7 @@ import { Remark, yaml2obj } from "./yaml2obj";
 import { CodelensProvider } from "./CodelensProvider";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
-//const compiler = "clang";
-const compiler = "$HOME/thesis-llvm/build/bin/clang";
-//const compiler = "Users/Catarina/clang/bin/clang";
+const compiler = "clang";
 const flags = "-c -o /dev/null -O3 -foptimization-record-file=>(cat)";
 
 async function gatherRemarks(input: Readable): Promise<Remark[]> {
@@ -85,7 +83,7 @@ function populateRemarks(doc: vscode.TextDocument): Promise<Remark[]> {
   clangPs.stderr.on("data", data => {
     vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
   });
-  clangPs.on("close", code => {
+  clangPs.on("close", _code => {
     /* already sent an error message */
   });
   return gatherRemarks(clangPs.stdout);
@@ -110,6 +108,7 @@ export function activate(context: vscode.ExtensionContext) {
       showRemarks(issues);
     })
   );
+
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.hideRemarks", () =>
       issues.clear()
@@ -126,17 +125,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     const remarks = await populateRemarks(doc);
 
-    const remarksInScope = remarks.filter(r => {
-      if (r.loopLocation) {
-        return r.loopLocation.Line === range.start.line + 1;
-      }
-      if (r.debugLoc) {
-        return range.contains(
+    const remarksInScope = remarks.filter(
+      r =>
+        r.debugLoc &&
+        range.contains(
           new vscode.Position(r.debugLoc.Line + 1, r.debugLoc.Column + 1)
-        );
-      }
-      return false;
-    });
+        )
+    );
 
     const possibleRemarks = uniq(remarksInScope.map(r => r.pass));
 
