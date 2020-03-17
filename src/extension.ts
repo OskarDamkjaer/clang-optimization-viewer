@@ -163,6 +163,7 @@ export function activate(context: vscode.ExtensionContext) {
       handleCodeLens
     )
   );
+
   vscode.languages.registerCodeLensProvider(
     [
       { scheme: "file", language: "c" },

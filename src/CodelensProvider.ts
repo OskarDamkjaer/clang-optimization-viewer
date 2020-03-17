@@ -1,4 +1,46 @@
 import * as vscode from "vscode";
+import { spawn } from "child_process";
+import { createInterface } from "readline";
+
+async function getAST(doc: vscode.TextDocument): Promise<string[]> {
+  const clangPs = spawn(`clang -cc1 -ast-dump ${doc.fileName}`, {
+    shell: "bash"
+  });
+
+  clangPs.stderr.on("data", _data => {
+    vscode.window.showErrorMessage(
+      `Error analyzing your file, is Clang installed?`
+    );
+  });
+
+  clangPs.on("close", _code => {
+    /* already sent an error message */
+  });
+
+  let ranges: string[] = [];
+  const rl = createInterface({ input: clangPs.stdout });
+  for await (const l of rl) {
+    if (l.includes("FunctionDecl")) {
+      ranges.push(l);
+    }
+    if (l.includes("ForStmt")) {
+      ranges.push(l);
+    }
+    if (l.includes("WhileStmt")) {
+      ranges.push(l);
+    }
+  }
+
+  return ranges;
+}
+
+function parsePosStrings(s: string): vscode.Range {
+  // makes these into positions "/home/dic15oda/Desktop/code.cpp:1:1, line:10:1"
+  const [start, end] = s.split(",");
+  const [_, startLine, startChar] = start.split(":").map(n => parseInt(n, 10));
+  const [_2, endLine, endChar] = end.split(":").map(n => parseInt(n, 10));
+  return new vscode.Range(startLine, startChar, endLine, endChar);
+}
 
 export class CodelensProvider implements vscode.CodeLensProvider {
   async provideCodeLenses(
@@ -6,59 +48,20 @@ export class CodelensProvider implements vscode.CodeLensProvider {
     _token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
     try {
-      const loopCommand: vscode.Command = {
-        command: "extension.addLoopRemark",
-        title: "loop"
-      };
+      const ast = await getAST(document);
+      const ranges = ast
+        .map(line => /<([^]+)>/.exec(line)![1])
+        .map(parsePosStrings);
 
       const fnCommand: vscode.Command = {
         command: "extension.addFunctionRemark",
-        title: "function"
+        title: "remarks pls"
       };
-      const uri = vscode.window.activeTextEditor?.document.uri;
-      if (!uri) {
-        throw Error("no uri");
-      }
 
-      const symbols = await vscode.commands.executeCommand<
-        [vscode.DocumentSymbol]
-      >("vscode.executeDocumentSymbolProvider", uri);
-
-      if (!symbols) {
-        vscode.window.showErrorMessage(
-          "Make sure you have language support for c/c++ when running this extension"
-        );
-        return [];
-      }
-
-      const fnLenses = symbols
-        .filter(s => s.kind === vscode.SymbolKind.Function)
-        .map(
-          s =>
-            new vscode.CodeLens(s.range, { ...fnCommand, arguments: [s.range] })
-        );
-
-      const regexSrc = /(for\s*\(|while\s*\()/g;
-      const regex = new RegExp(regexSrc);
-      const text = document.getText();
-      let matches;
-      let codeLenses: vscode.CodeLens[] = [...fnLenses];
-
-      while ((matches = regex.exec(text)) !== null) {
-        const line = document.lineAt(document.positionAt(matches.index).line);
-        const indexOf = line.text.indexOf(matches[0]);
-        const position = new vscode.Position(line.lineNumber, indexOf);
-        const range = document.getWordRangeAtPosition(
-          position,
-          new RegExp(regexSrc)
-        );
-        if (range) {
-          codeLenses = codeLenses.concat(
-            new vscode.CodeLens(range, { ...loopCommand, arguments: [range] })
-          );
-        }
-      }
-      return codeLenses;
+      return ranges.map(
+        range =>
+          new vscode.CodeLens(range, { ...fnCommand, arguments: [range] })
+      );
     } catch (e) {
       console.log(e);
       return [];
