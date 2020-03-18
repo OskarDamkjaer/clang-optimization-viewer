@@ -47,24 +47,27 @@ export class CodelensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
-    try {
-      const ast = await getAST(document);
-      const ranges = ast
-        .map(line => /<([^]+)>/.exec(line)![1])
-        .map(parsePosStrings);
+    const ast = await getAST(document);
+    const ranges = ast
+      .map(line => /<([^]+)>/.exec(line)![1])
+      .map(parsePosStrings);
 
-      const fnCommand: vscode.Command = {
-        command: "extension.addFunctionRemark",
-        title: "remarks pls"
-      };
-
-      return ranges.map(
-        range =>
-          new vscode.CodeLens(range, { ...fnCommand, arguments: [range] })
-      );
-    } catch (e) {
-      console.log(e);
-      return [];
-    }
+    return ranges.map(
+      range =>
+        new vscode.CodeLens(
+          /* range should only span one line */
+          new vscode.Range(
+            range.start.line - 1,
+            range.start.character,
+            range.start.line - 1,
+            range.start.character
+          ),
+          {
+            title: "show remarks",
+            command: "extension.addRemark",
+            arguments: [range]
+          }
+        )
+    );
   }
 }

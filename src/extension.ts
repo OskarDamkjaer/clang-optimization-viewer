@@ -128,9 +128,7 @@ export function activate(context: vscode.ExtensionContext) {
     const remarksInScope = remarks.filter(
       r =>
         r.debugLoc &&
-        range.contains(
-          new vscode.Position(r.debugLoc.Line + 1, r.debugLoc.Column + 1)
-        )
+        range.contains(new vscode.Position(r.debugLoc.Line, r.debugLoc.Column))
     );
 
     const possibleRemarks = uniq(remarksInScope.map(r => r.pass));
@@ -154,14 +152,7 @@ export function activate(context: vscode.ExtensionContext) {
   }
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("extension.addLoopRemark", handleCodeLens)
-  );
-
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      "extension.addFunctionRemark",
-      handleCodeLens
-    )
+    vscode.commands.registerCommand("extension.addRemark", handleCodeLens)
   );
 
   vscode.languages.registerCodeLensProvider(
