@@ -2,49 +2,45 @@ import * as vscode from "vscode";
 import { spawn } from "child_process";
 import { createInterface } from "readline";
 
-async function getAST(doc: vscode.TextDocument): Promise<string[]> {
-  /*const path = "/home/dic15oda/thesis-llvm/build";
-  const command =
-    "/usr/bin/c++ -DGTEST_HAS_RTTI=0 -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -Ilib/Transforms/Vectorize -I/home/dic15oda/thesis-llvm/llvm/lib/Transforms/Vectorize -Iinclude -I/home/dic15oda/thesis-llvm/llvm/include   -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -Wall -Wextra -Wno-unused-parameter -Wwrite-strings -Wcast-qual -Wmissing-field-initializers -pedantic -Wno-long-long -Wimplicit-fallthrough -Wcovered-switch-default -Wno-noexcept-type -Wnon-virtual-dtor -Wdelete-non-virtual-dtor -Wno-comment -Wstring-conversion -fdiagnostics-color -ffunction-sections -fdata-sections -O3    -UNDEBUG  -fno-exceptions -fno-rtti -std=c++14 -o lib/Transforms/Vectorize/CMakeFiles/LLVMVectorize.dir/LoopVectorizationLegality.cpp.o -c /home/dic15oda/thesis-llvm/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp";
+type LensTemplate = {
+  kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt";
+  range: vscode.Range;
+};
 
-  const clangPs = spawn(`cd ${path} && ${command} -Xclang -ast-dump `, {
-    shell: "bash"
-  });
-  */
-  console.log("as");
-  const clangPs = spawn(
-    `clang -Xclang -ast-dump ${doc.fileName} -c -o /dev/null -Wno-everything`,
-    {
-      shell: "bash"
-    }
+async function getAST(doc: vscode.TextDocument): Promise<LensTemplate[]> {
+  // lägga till include
+  const findFunctionDecls = spawn(
+    "/home/dic15oda/thesis-llvm/build/bin/find-function-decls",
+    [doc.fileName, "--"]
   );
-  console.log("asdf");
 
-  clangPs.stderr.on("data", _data => {
+  findFunctionDecls.stderr.on("data", _data => {
     console.log(_data.toString());
-    vscode.window.showErrorMessage(
-      `Error analyzing your file, is Clang installed?`
-    );
+    vscode.window.showErrorMessage(_data);
   });
 
-  clangPs.on("close", _code => {
+  findFunctionDecls.on("close", _code => {
     /* already sent an error message */
   });
 
-  let ranges: string[] = [];
-  const rl = createInterface({ input: clangPs.stdout });
+  let ranges: LensTemplate[] = [];
+  const rl = createInterface({ input: findFunctionDecls.stdout });
+  // TODO for await is inefficient
   for await (const l of rl) {
-    if (l.includes("FunctionDecl")) {
-      ranges.push(l);
+    const kind = l.split(";")[0];
+    if (
+      kind !== "ForStmt" &&
+      kind !== "WhileStmt" &&
+      kind !== "FuncDecl" &&
+      kind !== "DoStmt"
+    ) {
+      throw Error(`Unexpected lens-kind: ${kind}`);
     }
-    if (l.includes("ForStmt")) {
-      ranges.push(l);
-    }
-    if (l.includes("WhileStmt")) {
-      ranges.push(l);
-    }
+
+    const posString = /<([^]+?)>/.exec(l)![1];
+    const range = parsePosStrings(posString);
+    ranges.push({ kind, range });
   }
-  console.log("done");
 
   return ranges;
 }
@@ -57,31 +53,16 @@ function parsePosStrings(s: string): vscode.Range {
   return new vscode.Range(startLine, startChar, endLine, endChar);
 }
 
-function createPosStrings(line: string): string {
-  // assumes well formed functions
-
-  const res = /<([^]+)>/.exec(line)![1];
-
-  return res;
-}
-
 export class CodelensProvider implements vscode.CodeLensProvider {
   async provideCodeLenses(
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
     try {
-      console.log("a");
-      const ast = await getAST(document);
-      console.log("b");
-      const ranges = ast
-        .filter(a => !a.endsWith("extern"))
-        .map(createPosStrings)
-        .map(parsePosStrings);
-      console.log("c");
+      const lensTemplates = await getAST(document);
 
-      return ranges.map(
-        range =>
+      return lensTemplates.map(
+        ({ range, kind }) =>
           new vscode.CodeLens(
             /* range should only span one line */
             new vscode.Range(
@@ -91,7 +72,7 @@ export class CodelensProvider implements vscode.CodeLensProvider {
               range.start.character
             ),
             {
-              title: "show remarks",
+              title: kind,
               command: "extension.addRemark",
               arguments: [range]
             }
