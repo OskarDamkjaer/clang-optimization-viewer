@@ -1,17 +1,34 @@
 import * as vscode from "vscode";
-import { spawn } from "child_process";
+import { spawn, exec } from "child_process";
 import { createInterface } from "readline";
+import * as path from "path";
 
 type LensTemplate = {
   kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt";
   range: vscode.Range;
 };
 
+async function getIncludePath(): Promise<string> {
+  const out: string = await new Promise((resolve, reject) =>
+    exec("which clang && clang -dumpversion", (err, stdout) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(stdout);
+      }
+    })
+  );
+
+  const [clangPath, version] = out.split("\n");
+  return `-I${path.dirname(clangPath)}/../lib/clang/${version.trim()}/include`;
+}
+
 async function getAST(doc: vscode.TextDocument): Promise<LensTemplate[]> {
-  // lägga till include
+  const includePath = await getIncludePath();
+
   const findFunctionDecls = spawn(
-    "/home/dic15oda/thesis-llvm/build/bin/find-function-decls",
-    [doc.fileName, "--"]
+    "/home/dic15oda/opt-info/find-function-decls",
+    [doc.fileName, "--", includePath]
   );
 
   findFunctionDecls.stderr.on("data", _data => {

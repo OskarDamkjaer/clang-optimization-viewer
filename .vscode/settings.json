@@ -14,5 +14,9 @@
   "typescript.tsc.autoDetect": "off",
   "cSpell.ignoreWords": [
     "foptimization"
-  ]
+  ],
+  "files.associations": {
+    "*.eex": "HTML (Eex)",
+    "error.h": "c"
+  }
 }
