@@ -4,21 +4,22 @@ import { createInterface } from "readline";
 import { Readable } from "stream";
 import { Remark, yaml2obj } from "./yaml2obj";
 import { CodelensProvider } from "./CodelensProvider";
+import { appendFile } from "fs";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
-const compiler = "clang";
-const flags = " -c -o /dev/null -O3 -foptimization-record-file=>(cat)";
-// compile command "command": /usr/bin/c++ -DGTEST_HAS_RTTI=0 -D_DEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -Ilib/Transforms/Vectorize -I/home/dic15oda/thesis-llvm/llvm/lib/Transforms/Vectorize -Iinclude -I/home/dic15oda/thesis-llvm/llvm/include   -fPIC -fvisibility-inlines-hidden -Werror=date-time -Werror=unguarded-availability-new -Wall -Wextra -Wno-unused-parameter -Wwrite-strings -Wcast-qual -Wmissing-field-initializers -pedantic -Wno-long-long -Wimplicit-fallthrough -Wcovered-switch-default -Wno-noexcept-type -Wnon-virtual-dtor -Wdelete-non-virtual-dtor -Wno-comment -Wstring-conversion -fdiagnostics-color -ffunction-sections -fdata-sections -O3    -UNDEBUG  -fno-exceptions -fno-rtti -std=c++14 -o lib/Transforms/Vectorize/CMakeFiles/LLVMVectorize.dir/LoopVectorizationLegality.cpp.o -c /home/dic15oda/thesis-llvm/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp
+const extraFlags = " -c -o /dev/null -foptimization-record-file=>(cat)";
 
 async function gatherRemarks(input: Readable): Promise<Remark[]> {
   const rl = createInterface({ input });
   let currentRemark: string[] = [];
   let remarks: Remark[] = [];
-  for await (const l of rl) {
-    const line = l.trim();
+  // we need to throw away all data from the wrong files to save memory
+  // dessutom parsar vi helt koko
+  for await (const line of rl) {
     currentRemark.push(line);
 
     if (line === "...") {
+      appendFile("test.file", currentRemark.join("\n"), () => {});
       const remark = yaml2obj(currentRemark);
       remarks.push(remark);
       currentRemark = [];
@@ -77,8 +78,8 @@ function getDocumentOrWarn(): vscode.TextDocument | null {
   }
 }
 
-function populateRemarks(doc: vscode.TextDocument): Promise<Remark[]> {
-  const clangPs = spawn(`${compiler} ${doc.fileName} ${flags}`, {
+function populateRemarks(compileCommand: string): Promise<Remark[]> {
+  const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
     shell: "bash"
   });
   clangPs.stderr.on("data", data => {
@@ -89,6 +90,11 @@ function populateRemarks(doc: vscode.TextDocument): Promise<Remark[]> {
   });
   return gatherRemarks(clangPs.stdout);
 }
+// cache / förräkna errors?
+// kompilerar utan compilecommands i denna filen
+// performance av for l of rl och yaml2obj
+// tester
+// be hannes testa
 
 function showRemarks(issues: vscode.DiagnosticCollection) {
   const doc = getDocumentOrWarn();
@@ -97,7 +103,8 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
   }
 
   issues.clear();
-  populateRemarks(doc)
+  // todo better solution
+  populateRemarks(`clang ${doc.fileName}`)
     .then(r => remarkToDiagnostic(doc, r))
     .then(diagnostics => issues.set(doc.uri, diagnostics));
 }
@@ -116,15 +123,19 @@ export function activate(context: vscode.ExtensionContext) {
     )
   );
 
-  async function handleCodeLens(range: vscode.Range): Promise<void> {
+  async function handleCodeLens(
+    range: vscode.Range,
+    compileCommand: string
+  ): Promise<void> {
     const ALL = "All remarks";
     const NONE = "No remarks found in range";
     const doc = getDocumentOrWarn();
     if (!doc) {
       return;
     }
+    console.log("COMMAND", compileCommand);
 
-    const remarks = await populateRemarks(doc);
+    const remarks = await populateRemarks(compileCommand);
 
     const remarksInScope = remarks.filter(
       r =>

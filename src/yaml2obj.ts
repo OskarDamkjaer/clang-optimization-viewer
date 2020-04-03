@@ -1,15 +1,24 @@
 export type RemarkType = "Missed" | "Passed" | "Analysis";
+const YAML = require("yaml");
 
 export type Remark = {
-  pass: string;
-  type: RemarkType;
-  name: string;
-  debugLoc?: { File: string; Line: number; Column: number };
-  fn: string;
-  args: [string, string][];
+  Pass: string;
+  Type: RemarkType;
+  Name: string;
+  DebugLoc?: { File: string; Line: number; Column: number };
+  Function: string;
+  Args: [string, string][];
 };
 
-export function yaml2obj(yaml: string[]): Remark {
+export function yaml2obj(raw: string[]) {
+  const Type = raw[0].replace("--- !", "");
+  const parsed = YAML.parse(raw.slice(1).join("\n"));
+  const { Function, Name, Pass } = parsed;
+  const DebugLoc = parsed.DebugLoc;
+  const Args = parsed.Args.map(Object.entries).flat();
+  return { DebugLoc, Function, Name, Pass, Type, Args };
+
+  /*
   function reducer(acc: any, c: string): any {
     const curr = c.replace(/'/g, "");
     if (curr.startsWith("---")) {
@@ -68,4 +77,5 @@ export function yaml2obj(yaml: string[]): Remark {
     return acc;
   }
   return yaml.reduce(reducer, {});
+  */
 }

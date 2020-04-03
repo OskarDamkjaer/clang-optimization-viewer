@@ -4,7 +4,7 @@ import { createInterface } from "readline";
 import * as path from "path";
 
 type LensTemplate = {
-  kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt";
+  kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt" | "ForRangeStmt";
   range: vscode.Range;
 };
 
@@ -23,13 +23,27 @@ async function getIncludePath(): Promise<string> {
   return `-I${path.dirname(clangPath)}/../lib/clang/${version.trim()}/include`;
 }
 
-async function getAST(doc: vscode.TextDocument): Promise<LensTemplate[]> {
-  const includePath = await getIncludePath();
+async function getAST(
+  doc: vscode.TextDocument
+): Promise<[LensTemplate[], string]> {
+  //const includePath = await getIncludePath();
+  const [compileCommandURI] = await vscode.workspace.findFiles(
+    "compile_commands.json",
+    null,
+    1
+  );
+
+  // warn if no copmilecommands
+
+  console.log(compileCommandURI);
+  console.log([doc.fileName, "-p", compileCommandURI?.path || ""]);
 
   const findFunctionDecls = spawn(
     "/home/dic15oda/opt-info/find-function-decls",
-    [doc.fileName, "--", includePath]
+    [doc.fileName, "-p", compileCommandURI?.path || ""]
+    // if we pass -- and -I include then compile commands are no longer used properly
   );
+  // the cd from copmilercommands.json enought?
 
   findFunctionDecls.stderr.on("data", _data => {
     console.log(_data.toString());
@@ -43,10 +57,19 @@ async function getAST(doc: vscode.TextDocument): Promise<LensTemplate[]> {
   let ranges: LensTemplate[] = [];
   const rl = createInterface({ input: findFunctionDecls.stdout });
   // TODO for await is inefficient
+  let compileCommand = null;
   for await (const l of rl) {
+    // first line is compilecommand
+    // TODO handle if command is run withouyt compilecommand
+    if (!compileCommand) {
+      compileCommand = l;
+      continue;
+    }
+
     const kind = l.split(";")[0];
     if (
       kind !== "ForStmt" &&
+      kind !== "ForRangeStmt" &&
       kind !== "WhileStmt" &&
       kind !== "FuncDecl" &&
       kind !== "DoStmt"
@@ -55,11 +78,15 @@ async function getAST(doc: vscode.TextDocument): Promise<LensTemplate[]> {
     }
 
     const posString = /<([^]+?)>/.exec(l)![1];
-    const range = parsePosStrings(posString);
-    ranges.push({ kind, range });
+    if (posString.split(",").length === 2) {
+      const range = parsePosStrings(posString);
+      ranges.push({ kind, range });
+    }
   }
+  console.log(compileCommand);
+  // här var jag
 
-  return ranges;
+  return [ranges, compileCommand || ""];
 }
 
 function parsePosStrings(s: string): vscode.Range {
@@ -76,7 +103,7 @@ export class CodelensProvider implements vscode.CodeLensProvider {
     _token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
     try {
-      const lensTemplates = await getAST(document);
+      const [lensTemplates, compileCommand] = await getAST(document);
 
       return lensTemplates.map(
         ({ range, kind }) =>
@@ -91,7 +118,7 @@ export class CodelensProvider implements vscode.CodeLensProvider {
             {
               title: kind,
               command: "extension.addRemark",
-              arguments: [range]
+              arguments: [range, compileCommand]
             }
           )
       );
