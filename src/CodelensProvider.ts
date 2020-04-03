@@ -60,7 +60,7 @@ async function getAST(
   let compileCommand = null;
   for await (const l of rl) {
     // first line is compilecommand
-    // TODO handle if command is run withouyt compilecommand
+    // TODO handle if command is run without compilecommand
     if (!compileCommand) {
       compileCommand = l;
       continue;
@@ -84,7 +84,6 @@ async function getAST(
     }
   }
   console.log(compileCommand);
-  // här var jag
 
   return [ranges, compileCommand || ""];
 }

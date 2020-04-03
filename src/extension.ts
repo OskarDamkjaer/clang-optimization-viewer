@@ -4,7 +4,6 @@ import { createInterface } from "readline";
 import { Readable } from "stream";
 import { Remark, yaml2obj } from "./yaml2obj";
 import { CodelensProvider } from "./CodelensProvider";
-import { appendFile } from "fs";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
 const extraFlags = " -c -o /dev/null -foptimization-record-file=>(cat)";
@@ -19,9 +18,10 @@ async function gatherRemarks(input: Readable): Promise<Remark[]> {
     currentRemark.push(line);
 
     if (line === "...") {
-      appendFile("test.file", currentRemark.join("\n"), () => {});
       const remark = yaml2obj(currentRemark);
-      remarks.push(remark);
+      if (remark) {
+        remarks.push(remark);
+      }
       currentRemark = [];
     }
   }
@@ -33,7 +33,7 @@ function remarkToDiagnostic(
   remarks: Remark[]
 ): vscode.Diagnostic[] {
   return remarks.map(remark => {
-    const { Line, Column } = remark.debugLoc! || { Line: 0, Column: 0 };
+    const { Line, Column } = remark.DebugLoc;
     const pos = new vscode.Position(
       Math.max(0, Line - 1),
       Math.max(0, Column - 1)
@@ -48,14 +48,14 @@ function remarkToDiagnostic(
 
     return {
       code: "",
-      message: `${remark.type}: ${remark.pass}`,
+      message: `${remark.Type}: ${remark.Pass}`,
       range,
-      severity: severity[remark.type],
+      severity: severity[remark.Type],
       source: "",
       relatedInformation: [
         new vscode.DiagnosticRelatedInformation(
           new vscode.Location(doc.uri, range),
-          remark.args.map(([_key, value]) => value).join(" ")
+          remark.Args.map(([_key, value]) => value).join(" ")
         )
       ]
     };
@@ -137,13 +137,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     const remarks = await populateRemarks(compileCommand);
 
-    const remarksInScope = remarks.filter(
-      r =>
-        r.debugLoc &&
-        range.contains(new vscode.Position(r.debugLoc.Line, r.debugLoc.Column))
+    const remarksInScope = remarks.filter(r =>
+      range.contains(new vscode.Position(r.DebugLoc.Line, r.DebugLoc.Column))
     );
 
-    const possibleRemarks = uniq(remarksInScope.map(r => r.pass));
+    const possibleRemarks = uniq(remarksInScope.map(r => r.Pass));
 
     const chosen = await vscode.window.showQuickPick(
       [possibleRemarks.length === 0 ? NONE : ALL].concat(possibleRemarks)
@@ -156,7 +154,7 @@ export function activate(context: vscode.ExtensionContext) {
     const relevantRemarks =
       chosen === ALL
         ? remarksInScope
-        : remarksInScope.filter(r => r.pass === chosen);
+        : remarksInScope.filter(r => r.Pass === chosen);
 
     const diagnostics = remarkToDiagnostic(doc, relevantRemarks);
 
