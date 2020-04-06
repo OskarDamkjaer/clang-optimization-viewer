@@ -7,7 +7,7 @@ export type Remark = {
   Name: string;
   DebugLoc: { File: string; Line: number; Column: number };
   Function: string;
-  Args: [string, string][];
+  Args: [string, string | object][];
 };
 
 export function yaml2obj(raw: string[]): Remark | null {
@@ -27,7 +27,7 @@ export function yaml2obj(raw: string[]): Remark | null {
     !Args ||
     (Type !== "Missed" && Type !== "Passed" && Type !== "Analysis")
   ) {
-    //console.error("incomplete remark", parsed);
+    console.error("incomplete remark", parsed);
     return null;
   }
   return { DebugLoc, Function, Name, Pass, Type, Args };

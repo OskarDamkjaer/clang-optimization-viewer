@@ -12,8 +12,6 @@ async function gatherRemarks(input: Readable): Promise<Remark[]> {
   const rl = createInterface({ input });
   let currentRemark: string[] = [];
   let remarks: Remark[] = [];
-  // we need to throw away all data from the wrong files to save memory
-  // dessutom parsar vi helt koko
   for await (const line of rl) {
     currentRemark.push(line);
 
@@ -55,7 +53,9 @@ function remarkToDiagnostic(
       relatedInformation: [
         new vscode.DiagnosticRelatedInformation(
           new vscode.Location(doc.uri, range),
-          remark.Args.map(([_key, value]) => value).join(" ")
+          remark.Args.map(([_key, value]) => value)
+            .filter(t => typeof t === "string")
+            .join(" ")
         )
       ]
     };
@@ -90,11 +90,6 @@ function populateRemarks(compileCommand: string): Promise<Remark[]> {
   });
   return gatherRemarks(clangPs.stdout);
 }
-// cache / förräkna errors?
-// kompilerar utan compilecommands i denna filen
-// performance av for l of rl och yaml2obj
-// tester
-// be hannes testa
 
 function showRemarks(issues: vscode.DiagnosticCollection) {
   const doc = getDocumentOrWarn();
@@ -103,7 +98,6 @@ function showRemarks(issues: vscode.DiagnosticCollection) {
   }
 
   issues.clear();
-  // todo better solution
   populateRemarks(`clang ${doc.fileName}`)
     .then(r => remarkToDiagnostic(doc, r))
     .then(diagnostics => issues.set(doc.uri, diagnostics));
@@ -133,7 +127,6 @@ export function activate(context: vscode.ExtensionContext) {
     if (!doc) {
       return;
     }
-    console.log("COMMAND", compileCommand);
 
     const remarks = await populateRemarks(compileCommand);
 

@@ -32,30 +32,24 @@ test("parse LoopVectorizationLegality.cpp sample", () => {
       Column: 14,
       File: "/home/dic15oda/thesis-llvm/llvm/include/llvm/ADT/StringRef.h",
       Line: 81
-    }, 
+    },
     Function: "_ZN4llvm9StringRef6strLenEPKc",
     Name: "NoDefinition",
     Pass: "inline",
     Type: "Missed",
-    [
-      // RPATA Med skeppskted. se till att där inte ä14k remarks
-           ["Callee", "strlen"],
-           [ "String", " will not be inlined into ", ],
-           [ "Caller", "_ZN4llvm9StringRef6strLenEPKc", ],
-           [ "DebugLoc",
-            /*{
-               "Column": 0,
-               "File": "/home/dic15oda/thesis-llvm/llvm/include/llvm/ADT/StringRef.h",
-               "Line": 77,
-             },
-
-             // jag säger de bara är strängar men de kan vara objekt också
-
-           ],
-            [
-              "String", " because its definition is unavailable",
-            ],
-*/
-  ]
+    Args: [
+      ["Callee", "strlen"],
+      ["String", " will not be inlined into "],
+      ["Caller", "_ZN4llvm9StringRef6strLenEPKc"],
+      [
+        "DebugLoc",
+        {
+          Column: 0,
+          File: "/home/dic15oda/thesis-llvm/llvm/include/llvm/ADT/StringRef.h",
+          Line: 77
+        }
+      ],
+      ["String", " because its definition is unavailable"]
+    ]
   });
 });

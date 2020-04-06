@@ -26,24 +26,17 @@ async function getIncludePath(): Promise<string> {
 async function getAST(
   doc: vscode.TextDocument
 ): Promise<[LensTemplate[], string]> {
-  //const includePath = await getIncludePath();
   const [compileCommandURI] = await vscode.workspace.findFiles(
     "compile_commands.json",
     null,
     1
   );
 
-  // warn if no copmilecommands
-
-  console.log(compileCommandURI);
-  console.log([doc.fileName, "-p", compileCommandURI?.path || ""]);
-
   const findFunctionDecls = spawn(
     "/home/dic15oda/opt-info/find-function-decls",
     [doc.fileName, "-p", compileCommandURI?.path || ""]
-    // if we pass -- and -I include then compile commands are no longer used properly
+    // if we pass -- then compile commands are no longer used properly
   );
-  // the cd from copmilercommands.json enought?
 
   findFunctionDecls.stderr.on("data", _data => {
     console.log(_data.toString());
@@ -56,11 +49,9 @@ async function getAST(
 
   let ranges: LensTemplate[] = [];
   const rl = createInterface({ input: findFunctionDecls.stdout });
-  // TODO for await is inefficient
   let compileCommand = null;
   for await (const l of rl) {
     // first line is compilecommand
-    // TODO handle if command is run without compilecommand
     if (!compileCommand) {
       compileCommand = l;
       continue;
