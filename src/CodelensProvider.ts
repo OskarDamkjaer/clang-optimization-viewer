@@ -1,27 +1,11 @@
 import * as vscode from "vscode";
 import { spawn, exec } from "child_process";
 import { createInterface } from "readline";
-import * as path from "path";
 
 type LensTemplate = {
   kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt" | "ForRangeStmt";
   range: vscode.Range;
 };
-
-async function getIncludePath(): Promise<string> {
-  const out: string = await new Promise((resolve, reject) =>
-    exec("which clang && clang -dumpversion", (err, stdout) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(stdout);
-      }
-    })
-  );
-
-  const [clangPath, version] = out.split("\n");
-  return `-I${path.dirname(clangPath)}/../lib/clang/${version.trim()}/include`;
-}
 
 async function getAST(
   doc: vscode.TextDocument
@@ -38,9 +22,9 @@ async function getAST(
     // if we pass -- then compile commands are no longer used properly
   );
 
-  findFunctionDecls.stderr.on("data", _data => {
-    console.log(_data.toString());
-    vscode.window.showErrorMessage(_data);
+  findFunctionDecls.stderr.on("data", data => {
+    console.log(data.toString());
+    vscode.window.showErrorMessage(data);
   });
 
   findFunctionDecls.on("close", _code => {
@@ -74,7 +58,6 @@ async function getAST(
       ranges.push({ kind, range });
     }
   }
-  console.log(compileCommand);
 
   return [ranges, compileCommand || ""];
 }
