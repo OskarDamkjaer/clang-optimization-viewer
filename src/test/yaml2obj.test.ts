@@ -1,4 +1,4 @@
-import { yaml2obj } from "../yaml2obj";
+import { yaml2obj } from "../remarkFns";
 import { fromDemo, brokenYaml, llvmExample } from "./testdata";
 
 test("parse code.c sample", () => {

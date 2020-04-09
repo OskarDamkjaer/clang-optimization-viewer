@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { Remark, populateRemarks } from "./yaml2obj";
+import { Remark, populateRemarks } from "./remarkFns";
 import { CodelensProvider } from "./CodelensProvider";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];

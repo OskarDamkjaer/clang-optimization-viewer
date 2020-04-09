@@ -2,6 +2,7 @@ import * as YAML from "yaml";
 import { spawn } from "child_process";
 import { createInterface } from "readline";
 import { Readable } from "stream";
+import { once } from "events";
 
 export type RemarkType = "Missed" | "Passed" | "Analysis";
 export type Remark = {
@@ -39,8 +40,6 @@ function numberIsDefined(num: number): boolean {
   return !!num || num === 0;
 }
 
-const extraFlags = " -c -o /dev/null -foptimization-record-file=>(cat)";
-
 export async function gatherRemarks(
   input: Readable,
   relevantFile: string
@@ -51,11 +50,12 @@ export async function gatherRemarks(
   let isRelevantRemark = true;
   let missingDebugLocation = true;
 
-  for await (const line of rl) {
+  rl.on("line", line => {
     currentRemark.push(line);
+
     if (line.startsWith("DebugLoc:")) {
       missingDebugLocation = false;
-      const match = line.match(/(.*?),/ /*chars until comma*/);
+      const match = line.match(/(.*?),/);
       if (!match) {
         console.error("No match", line);
       } else {
@@ -83,7 +83,10 @@ export async function gatherRemarks(
       isRelevantRemark = true;
       missingDebugLocation = true;
     }
-  }
+  });
+
+  await once(rl, "close");
+
   return remarks;
 }
 
@@ -92,6 +95,7 @@ export function populateRemarks(
   fileName: string,
   onError: (error: string) => any
 ): Promise<Remark[]> {
+  const extraFlags = " -c -o /dev/null -foptimization-record-file=>(cat)";
   const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
     shell: "bash"
   });

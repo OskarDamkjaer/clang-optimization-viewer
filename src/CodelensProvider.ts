@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
-import { spawn, exec } from "child_process";
+import { spawn } from "child_process";
 import { createInterface } from "readline";
+import { once } from "events";
 
 type LensTemplate = {
   kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt" | "ForRangeStmt";
@@ -33,12 +34,13 @@ async function getAST(
 
   let ranges: LensTemplate[] = [];
   const rl = createInterface({ input: findFunctionDecls.stdout });
-  let compileCommand = null;
-  for await (const l of rl) {
+  let compileCommand: string | null = null;
+
+  rl.on("line", (l: string) => {
     // first line is compilecommand
     if (!compileCommand) {
       compileCommand = l;
-      continue;
+      return;
     }
 
     const kind = l.split(";")[0];
@@ -57,7 +59,9 @@ async function getAST(
       const range = parsePosStrings(posString);
       ranges.push({ kind, range });
     }
-  }
+  });
+
+  await once(rl, "close");
 
   return [ranges, compileCommand || ""];
 }
