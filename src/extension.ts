@@ -8,7 +8,7 @@ function remarkToDiagnostic(
   uri: vscode.Uri,
   remarks: Remark[]
 ): vscode.Diagnostic[] {
-  return remarks.map(remark => {
+  return remarks.map((remark) => {
     const { Line, Column } = remark.DebugLoc;
     const pos = new vscode.Position(
       Math.max(0, Line - 1),
@@ -19,7 +19,7 @@ function remarkToDiagnostic(
     const severity = {
       Passed: vscode.DiagnosticSeverity.Information,
       Analysis: vscode.DiagnosticSeverity.Hint,
-      Missed: vscode.DiagnosticSeverity.Warning
+      Missed: vscode.DiagnosticSeverity.Warning,
     };
 
     return {
@@ -32,10 +32,10 @@ function remarkToDiagnostic(
         new vscode.DiagnosticRelatedInformation(
           new vscode.Location(uri, range),
           remark.Args.map(([_key, value]) => value)
-            .filter(t => typeof t === "string")
+            .filter((t) => typeof t === "string")
             .join(" ")
-        )
-      ]
+        ),
+      ],
     };
   });
 }
@@ -45,7 +45,7 @@ function getDocumentOrWarn(): vscode.TextDocument | null {
 
   if (
     doc &&
-    fileExtensions.some(ending => doc.fileName.toLowerCase().endsWith(ending))
+    fileExtensions.some((ending) => doc.fileName.toLowerCase().endsWith(ending))
   ) {
     return doc;
   } else {
@@ -54,18 +54,6 @@ function getDocumentOrWarn(): vscode.TextDocument | null {
     );
     return null;
   }
-}
-
-function showRemarks(issues: vscode.DiagnosticCollection) {
-  const doc = getDocumentOrWarn();
-  if (!doc) {
-    return;
-  }
-
-  issues.clear();
-  populateRemarks(`clang ${doc.fileName}`, doc.fileName, onError)
-    .then(r => remarkToDiagnostic(doc.uri, r))
-    .then(diagnostics => issues.set(doc.uri, diagnostics));
 }
 
 function onError(data: string): void {
@@ -82,11 +70,12 @@ export async function handleCodeLens(
 
   const remarks = await populateRemarks(compileCommand, uri.fsPath, onError);
 
-  const remarksInScope = remarks.filter(r =>
+  console.log(remarks);
+  const remarksInScope = remarks.filter((r) =>
     range.contains(new vscode.Position(r.DebugLoc.Line, r.DebugLoc.Column))
   );
 
-  const possibleRemarks = uniq(remarksInScope.map(r => r.Pass));
+  const possibleRemarks = uniq(remarksInScope.map((r) => r.Pass));
 
   const chosen = await vscode.window.showQuickPick(
     [possibleRemarks.length === 0 ? NONE : ALL].concat(possibleRemarks)
@@ -99,18 +88,13 @@ export async function handleCodeLens(
   const relevantRemarks =
     chosen === ALL
       ? remarksInScope
-      : remarksInScope.filter(r => r.Pass === chosen);
+      : remarksInScope.filter((r) => r.Pass === chosen);
 
   return remarkToDiagnostic(uri, relevantRemarks);
 }
 
 export function activate(context: vscode.ExtensionContext) {
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
-  context.subscriptions.push(
-    vscode.commands.registerCommand("extension.showRemarks", () => {
-      showRemarks(issues);
-    })
-  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.hideRemarks", () =>
@@ -136,7 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.languages.registerCodeLensProvider(
     [
       { scheme: "file", language: "c" },
-      { scheme: "file", language: "cpp" }
+      { scheme: "file", language: "cpp" },
     ],
     new CodelensProvider()
   );

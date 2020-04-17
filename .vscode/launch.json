@@ -12,7 +12,7 @@
       "runtimeExecutable": "${execPath}",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "/home/dic15oda/thesis-llvm/llvm/lib/Transforms/Vectorize"
+        "/Users/Catarina/opt-info/testdir"
       ],
       "outFiles": ["${workspaceFolder}/out/**/*.js"],
       "preLaunchTask": "${defaultBuildTask}"

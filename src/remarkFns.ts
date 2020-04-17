@@ -1,4 +1,5 @@
 import * as YAML from "yaml";
+import * as path from "path";
 import { spawn } from "child_process";
 import { createInterface } from "readline";
 import { Readable } from "stream";
@@ -50,7 +51,7 @@ export async function gatherRemarks(
   let isRelevantRemark = true;
   let missingDebugLocation = true;
 
-  rl.on("line", line => {
+  rl.on("line", (line) => {
     currentRemark.push(line);
 
     if (line.startsWith("DebugLoc:")) {
@@ -60,7 +61,11 @@ export async function gatherRemarks(
         console.error("No match", line);
       } else {
         const file = match[0].split("File: ")[1].slice(0, -1);
-        if (file !== relevantFile) {
+
+        if (
+          file !== relevantFile &&
+          path.basename(file) !== path.basename(relevantFile)
+        ) {
           isRelevantRemark = false;
           if (file.endsWith(".cpp")) {
             console.log("should match?", file, relevantFile);
@@ -97,11 +102,11 @@ export function populateRemarks(
 ): Promise<Remark[]> {
   const extraFlags = " -c -o /dev/null -foptimization-record-file=>(cat)";
   const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
-    shell: "bash"
+    shell: "bash",
   });
   clangPs.stderr.on("data", onError);
 
-  clangPs.on("close", _code => {
+  clangPs.on("close", (_code) => {
     /* already sent an error message */
   });
   return gatherRemarks(clangPs.stdout, fileName);

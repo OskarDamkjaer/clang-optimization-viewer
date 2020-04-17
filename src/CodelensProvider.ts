@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { spawn } from "child_process";
+import { spawn, exec } from "child_process";
 import { createInterface } from "readline";
 import { once } from "events";
 
@@ -11,24 +11,16 @@ type LensTemplate = {
 async function getAST(
   doc: vscode.TextDocument
 ): Promise<[LensTemplate[], string]> {
-  const [compileCommandURI] = await vscode.workspace.findFiles(
-    "compile_commands.json",
-    null,
-    1
-  );
+  const findFunctionDecls = spawn("./find-function-decls", [doc.fileName], {
+    cwd: __dirname,
+  });
 
-  const findFunctionDecls = spawn(
-    "/home/dic15oda/opt-info/find-function-decls",
-    [doc.fileName, "-p", compileCommandURI?.path || ""]
-    // if we pass -- then compile commands are no longer used properly
-  );
-
-  findFunctionDecls.stderr.on("data", data => {
+  findFunctionDecls.stderr.on("data", (data) => {
     console.log(data.toString());
     vscode.window.showErrorMessage(data);
   });
 
-  findFunctionDecls.on("close", _code => {
+  findFunctionDecls.on("close", (_code) => {
     /* already sent an error message */
   });
 
@@ -62,6 +54,7 @@ async function getAST(
   });
 
   await once(rl, "close");
+  debugger;
 
   return [ranges, compileCommand || ""];
 }
@@ -69,8 +62,10 @@ async function getAST(
 function parsePosStrings(s: string): vscode.Range {
   // makes these into positions "/home/dic15oda/Desktop/code.cpp:1:1, line:10:1"
   const [start, end] = s.split(",");
-  const [_, startLine, startChar] = start.split(":").map(n => parseInt(n, 10));
-  const [_2, endLine, endChar] = end.split(":").map(n => parseInt(n, 10));
+  const [_, startLine, startChar] = start
+    .split(":")
+    .map((n) => parseInt(n, 10));
+  const [_2, endLine, endChar] = end.split(":").map((n) => parseInt(n, 10));
   return new vscode.Range(startLine, startChar, endLine, endChar);
 }
 
@@ -95,7 +90,7 @@ export class CodelensProvider implements vscode.CodeLensProvider {
             {
               title: kind,
               command: "extension.addRemark",
-              arguments: [range, compileCommand]
+              arguments: [range, compileCommand],
             }
           )
       );
