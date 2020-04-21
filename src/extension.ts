@@ -70,7 +70,6 @@ export async function handleCodeLens(
 
   const remarks = await populateRemarks(compileCommand, uri.fsPath, onError);
 
-  console.log(remarks);
   const remarksInScope = remarks.filter((r) =>
     range.contains(new vscode.Position(r.DebugLoc.Line, r.DebugLoc.Column))
   );

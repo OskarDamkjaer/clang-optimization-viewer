@@ -1,11 +1,18 @@
 import * as vscode from "vscode";
-import { spawn, exec } from "child_process";
+import { spawn } from "child_process";
 import { createInterface } from "readline";
 import { once } from "events";
 
 type LensTemplate = {
   kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt" | "ForRangeStmt";
   range: vscode.Range;
+};
+const stmtToTitle = {
+  ForStmt: "Show remarks this loop",
+  WhileStmt: "Show remarks this loop",
+  FuncDecl: "Show remarks this function",
+  DoStmt: "Show remarks this loop",
+  ForRangeStmt: "Show remarks this loop",
 };
 
 async function getAST(
@@ -54,7 +61,6 @@ async function getAST(
   });
 
   await once(rl, "close");
-  debugger;
 
   return [ranges, compileCommand || ""];
 }
@@ -62,10 +68,32 @@ async function getAST(
 function parsePosStrings(s: string): vscode.Range {
   // makes these into positions "/home/dic15oda/Desktop/code.cpp:1:1, line:10:1"
   const [start, end] = s.split(",");
+  if (!(start && end)) {
+    throw new Error(s);
+  }
   const [_, startLine, startChar] = start
     .split(":")
     .map((n) => parseInt(n, 10));
-  const [_2, endLine, endChar] = end.split(":").map((n) => parseInt(n, 10));
+
+  let _2, endLine, endChar;
+  const shortHandLocRegex = /^ col:\d+$/; // test if format is: filename:nbr:nbr, col:nbr
+  if (shortHandLocRegex.test(end)) {
+    endLine = startLine;
+    endChar = parseInt(end.split(":")[1], 10);
+  } else {
+    [_2, endLine, endChar] = end.split(":").map((n) => parseInt(n, 10));
+  }
+
+  if (
+    !(
+      typeof startLine === "number" &&
+      typeof startChar === "number" &&
+      typeof endLine === "number" &&
+      typeof endChar === "number"
+    )
+  ) {
+    throw new Error(s);
+  }
   return new vscode.Range(startLine, startChar, endLine, endChar);
 }
 
@@ -74,30 +102,24 @@ export class CodelensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
-    try {
-      const [lensTemplates, compileCommand] = await getAST(document);
+    const [lensTemplates, compileCommand] = await getAST(document);
 
-      return lensTemplates.map(
-        ({ range, kind }) =>
-          new vscode.CodeLens(
-            /* range should only span one line */
-            new vscode.Range(
-              range.start.line - 1,
-              range.start.character,
-              range.start.line - 1,
-              range.start.character
-            ),
-            {
-              title: kind,
-              command: "extension.addRemark",
-              arguments: [range, compileCommand],
-            }
-          )
-      );
-    } catch (e) {
-      console.log(e);
-      // otherwise no indication of crash
-      return [];
-    }
+    return lensTemplates.map(
+      ({ range, kind }) =>
+        new vscode.CodeLens(
+          /* range should only span one line */
+          new vscode.Range(
+            range.start.line - 1,
+            range.start.character,
+            range.start.line - 1,
+            range.start.character
+          ),
+          {
+            title: stmtToTitle[kind],
+            command: "extension.addRemark",
+            arguments: [range, compileCommand],
+          }
+        )
+    );
   }
 }

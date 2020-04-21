@@ -56,23 +56,26 @@ export async function gatherRemarks(
 
     if (line.startsWith("DebugLoc:")) {
       missingDebugLocation = false;
-      const match = line.match(/(.*?),/);
+      const fileNameFinder = /File: (.*?(?=,))/;
+      const match = line.match(fileNameFinder);
       if (!match) {
         console.error("No match", line);
       } else {
-        const file = match[0].split("File: ")[1].slice(0, -1);
+        const file = match[1].replace(/'/g, "");
+
+        if (!file) {
+          console.log("no file", line);
+        }
 
         if (
           file !== relevantFile &&
           path.basename(file) !== path.basename(relevantFile)
         ) {
           isRelevantRemark = false;
+          // TODO we need to check for more endings
           if (file.endsWith(".cpp")) {
             console.log("should match?", file, relevantFile);
           }
-        }
-        if (!file) {
-          console.log(line);
         }
       }
     }
@@ -100,7 +103,8 @@ export function populateRemarks(
   fileName: string,
   onError: (error: string) => any
 ): Promise<Remark[]> {
-  const extraFlags = " -c -o /dev/null -foptimization-record-file=>(cat)";
+  const extraFlags =
+    " -c -o /dev/null  -fsave-optimization-record -foptimization-record-file=>(cat)";
   const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
     shell: "bash",
   });

@@ -1,5 +1,4 @@
 #include <stdarg.h>
-
 int demo(int *a)
 {
   int sum = 0;
