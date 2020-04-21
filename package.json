@@ -4,6 +4,7 @@
   "description": "Show optimization remarks from clang right in your editor.",
   "version": "0.7.0",
   "publisher": "damkjaer",
+  "preview": true,
   "engines": {
     "vscode": "^1.41.0"
   },
@@ -49,5 +50,10 @@
   },
   "dependencies": {
     "yaml": "^1.7.2"
-  }
+  },
+  "license": "ISC",
+  "os": [
+    "darwin",
+    "linux"
+  ]
 }

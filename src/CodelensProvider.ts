@@ -7,6 +7,7 @@ type LensTemplate = {
   kind: "ForStmt" | "WhileStmt" | "FuncDecl" | "DoStmt" | "ForRangeStmt";
   range: vscode.Range;
 };
+
 const stmtToTitle = {
   ForStmt: "Show remarks this loop",
   WhileStmt: "Show remarks this loop",
