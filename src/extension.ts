@@ -19,8 +19,8 @@ function remarkToDiagnostic(
     const range = new vscode.Range(pos, pos);
     const severity = {
       Passed: vscode.DiagnosticSeverity.Information,
-      Analysis: vscode.DiagnosticSeverity.Hint,
-      Missed: vscode.DiagnosticSeverity.Warning,
+      Analysis: vscode.DiagnosticSeverity.Warning,
+      Missed: vscode.DiagnosticSeverity.Error,
     };
 
     return {
