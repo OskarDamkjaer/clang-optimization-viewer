@@ -804,7 +804,7 @@ static Instruction *getDebugLocFromInstOrOperands(Instruction *I) {
       if (OpInst->getDebugLoc() != Empty)
         return OpInst;
   }
-
+  
   return I;
 }
 

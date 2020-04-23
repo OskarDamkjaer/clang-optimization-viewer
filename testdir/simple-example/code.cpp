@@ -1,4 +1,5 @@
 #include <stdarg.h>
+
 int demo(int *a)
 {
   int sum = 0;
@@ -11,7 +12,7 @@ int demo(int *a)
     }
     else
     {
-      return 0;
+       sum += demo(a);
     }
   }
   return sum;

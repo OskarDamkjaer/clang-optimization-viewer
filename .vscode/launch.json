@@ -12,6 +12,7 @@
       "runtimeExecutable": "${execPath}",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
+        //"/Users/Catarina/vim"
         "/Users/Catarina/opt-info/testdir"
       ],
       "outFiles": ["${workspaceFolder}/out/**/*.js"],

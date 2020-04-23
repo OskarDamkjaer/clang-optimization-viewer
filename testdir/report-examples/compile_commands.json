@@ -1,0 +1,98 @@
+[
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "A3.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "A3.c"
+ }, 
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "E1.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "E1.c"
+ }, 
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "D3.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "D3.c"
+ }, 
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "C2.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "C2.c"
+ }, 
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "A4.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "A4.c"
+ }, 
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "D5.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "D5.c"
+ }, 
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "C3.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "C3.c"
+ }, 
+ {
+  "directory": "/Users/Catarina/opt-info/testdir/report-examples", 
+  "arguments": [
+   "~/Downloads/clang+llvm-10.0-1.0-x86_64-apple-darwin/bin/clang", 
+   "report-example.c", 
+   "-O2", 
+   "-c", 
+   "-o", 
+   "/dev/null"
+  ], 
+  "file": "report-example.c"
+ }
+]

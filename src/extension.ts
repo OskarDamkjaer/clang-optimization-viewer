@@ -3,6 +3,7 @@ import { Remark, populateRemarks } from "./remarkFns";
 import { CodelensProvider } from "./CodelensProvider";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
+let remarkCache: null | { file: string; remarks: Remark[] } = null;
 
 function remarkToDiagnostic(
   uri: vscode.Uri,
@@ -62,13 +63,11 @@ function onError(data: string): void {
 
 export async function handleCodeLens(
   range: vscode.Range,
-  compileCommand: string,
-  uri: vscode.Uri
+  uri: vscode.Uri,
+  remarks: Remark[]
 ): Promise<readonly vscode.Diagnostic[] | null> {
   const ALL = "All remarks";
   const NONE = "No remarks found in range";
-
-  const remarks = await populateRemarks(compileCommand, uri.fsPath, onError);
 
   const remarksInScope = remarks.filter((r) =>
     range.contains(new vscode.Position(r.DebugLoc.Line, r.DebugLoc.Column))
@@ -107,14 +106,42 @@ export function activate(context: vscode.ExtensionContext) {
       async (range, command) => {
         const doc = getDocumentOrWarn();
         if (doc) {
-          const diags = await handleCodeLens(range, command, doc.uri);
+          if (!remarkCache || remarkCache.file !== doc.fileName) {
+            remarkCache = {
+              file: doc.fileName,
+              remarks: await populateRemarks(command, doc.uri.fsPath, onError),
+            };
+          }
+          const diags = await handleCodeLens(
+            range,
+            doc.uri,
+            remarkCache.remarks
+          );
+
           if (diags) {
             issues.set(doc.uri, diags);
+          } else {
+            issues.clear();
           }
         }
       }
     )
   );
+
+  vscode.workspace.onDidSaveTextDocument((savedDoc: vscode.TextDocument) => {
+    const activeDoc = vscode.window.activeTextEditor?.document;
+    if (
+      activeDoc &&
+      fileExtensions.some((ending) =>
+        activeDoc.fileName.toLowerCase().endsWith(ending)
+      )
+    ) {
+      if (savedDoc.fileName === activeDoc.fileName) {
+        remarkCache = null;
+        issues.clear();
+      }
+    }
+  });
 
   vscode.languages.registerCodeLensProvider(
     [

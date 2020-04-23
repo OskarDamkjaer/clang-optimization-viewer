@@ -9,11 +9,11 @@ type LensTemplate = {
 };
 
 const stmtToTitle = {
-  ForStmt: "Show remarks this loop",
-  WhileStmt: "Show remarks this loop",
-  FuncDecl: "Show remarks this function",
-  DoStmt: "Show remarks this loop",
-  ForRangeStmt: "Show remarks this loop",
+  ForStmt: "Show remarks for this loop",
+  WhileStmt: "Show remarks for this loop",
+  FuncDecl: "Show remarks for this function",
+  DoStmt: "Show remarks for this loop",
+  ForRangeStmt: "Show remarks for this loop",
 };
 
 async function getAST(
