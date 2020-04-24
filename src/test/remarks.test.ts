@@ -7,7 +7,11 @@ const filePath =
 
 test("parse code.c sample", async () => {
   expect(
-    (await populateRemarks(compileLoopVec, filePath, console.error))[0]
+    (
+      await populateRemarks(compileLoopVec, filePath, console.error, {
+        isCancellationRequested: false,
+      })
+    )[0]
   ).toEqual({
     Args: [
       ["Callee", "_ZN4llvm13isPowerOf2_32Ej"],
@@ -17,8 +21,8 @@ test("parse code.c sample", async () => {
           Column: 0,
           File:
             "/home/dic15oda/thesis-llvm/llvm/include/llvm/Support/MathExtras.h",
-          Line: 465
-        }
+          Line: 465,
+        },
       ],
       ["String", " inlined into "],
       ["Caller", "_ZN4llvm18LoopVectorizeHints4Hint8validateEj"],
@@ -28,24 +32,24 @@ test("parse code.c sample", async () => {
           Column: 0,
           File:
             "/home/dic15oda/thesis-llvm/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp",
-          Line: 53
-        }
+          Line: 53,
+        },
       ],
       ["String", " with cost="],
       ["Cost", "-10"],
       ["String", " (threshold="],
       ["Threshold", "325"],
-      ["String", ")"]
+      ["String", ")"],
     ],
     DebugLoc: {
       Column: 12,
       File:
         "/home/dic15oda/thesis-llvm/llvm/lib/Transforms/Vectorize/LoopVectorizationLegality.cpp",
-      Line: 56
+      Line: 56,
     },
     Function: "_ZN4llvm18LoopVectorizeHints4Hint8validateEj",
     Name: "Inlined",
     Pass: "inline",
-    Type: "Passed"
+    Type: "Passed",
   });
 }, 30000);

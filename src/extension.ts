@@ -3,7 +3,10 @@ import { Remark, populateRemarks } from "./remarkFns";
 import { CodelensProvider } from "./CodelensProvider";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
-let remarkCache: null | { file: string; remarks: Remark[] } = null;
+type RemarkCache = null | { file: string; remarks: Remark[] };
+type Work = null | { file: string; range: vscode.Range };
+let remarkCache: RemarkCache = null;
+let currentlyWorkingOn: Work = null;
 
 function remarkToDiagnostic(
   uri: vscode.Uri,
@@ -57,6 +60,35 @@ function getDocumentOrWarn(): vscode.TextDocument | null {
   }
 }
 
+async function populateRemarksWithProgress(
+  doc: vscode.TextDocument,
+  command: string
+): Promise<RemarkCache> {
+  return await vscode.window.withProgress(
+    {
+      location: vscode.ProgressLocation.Notification,
+      title: "Creating remarks",
+      cancellable: true,
+    },
+    async (_progress, token) => {
+      const remarks = await populateRemarks(
+        command,
+        doc.uri.fsPath,
+        onError,
+        token
+      );
+
+      if (token.isCancellationRequested) {
+        return null;
+      }
+      return {
+        file: doc.fileName,
+        remarks,
+      };
+    }
+  );
+}
+
 function onError(data: string): void {
   vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
 }
@@ -105,15 +137,36 @@ export function activate(context: vscode.ExtensionContext) {
       "extension.addRemark",
       async (range, command) => {
         const doc = getDocumentOrWarn();
-        if (doc) {
-          if (!remarkCache || remarkCache.file !== doc.fileName) {
-            remarkCache = {
-              file: doc.fileName,
-              remarks: await populateRemarks(command, doc.uri.fsPath, onError),
-            };
+        if (!doc) {
+          return;
+        }
+
+        if (currentlyWorkingOn) {
+          const sameFile = currentlyWorkingOn.file === doc.fileName;
+          const sameRange = currentlyWorkingOn.range.isEqual(range);
+          if (sameFile) {
+            if (!sameRange) {
+              // if same file but new range set to open that range instead
+              currentlyWorkingOn = { ...currentlyWorkingOn, range };
+            }
+            return;
+          } else {
+            // it would be better to cancel the old work automatically and continue
+            vscode.window.showErrorMessage(
+              "Please cancel the running task to start a task in a new file"
+            );
+            return;
           }
+        }
+
+        currentlyWorkingOn = { file: doc.fileName, range };
+        if (!remarkCache || remarkCache.file !== doc.fileName) {
+          remarkCache = await populateRemarksWithProgress(doc, command);
+        }
+
+        if (remarkCache) {
           const diags = await handleCodeLens(
-            range,
+            currentlyWorkingOn.range,
             doc.uri,
             remarkCache.remarks
           );
@@ -124,6 +177,7 @@ export function activate(context: vscode.ExtensionContext) {
             issues.clear();
           }
         }
+        currentlyWorkingOn = null;
       }
     )
   );

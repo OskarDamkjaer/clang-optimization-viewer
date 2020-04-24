@@ -1,8 +1,7 @@
 import * as YAML from "yaml";
 import * as path from "path";
-import { spawn } from "child_process";
+import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { createInterface } from "readline";
-import { Readable } from "stream";
 import { once } from "events";
 
 export type RemarkType = "Missed" | "Passed" | "Analysis";
@@ -42,16 +41,23 @@ function numberIsDefined(num: number): boolean {
 }
 
 export async function gatherRemarks(
-  input: Readable,
-  relevantFile: string
+  clangPs: ChildProcessWithoutNullStreams,
+  relevantFile: string,
+  token: { isCancellationRequested: boolean }
 ): Promise<Remark[]> {
-  const rl = createInterface({ input });
+  const rl = createInterface({ input: clangPs.stdout });
   let currentRemark: string[] = [];
   let remarks: Remark[] = [];
   let isRelevantRemark = true;
   let missingDebugLocation = true;
 
   rl.on("line", (line) => {
+    if (token.isCancellationRequested) {
+      clangPs.stdout.pause();
+      clangPs.kill();
+      rl.close();
+      return;
+    }
     currentRemark.push(line);
 
     if (line.startsWith("DebugLoc:")) {
@@ -101,7 +107,10 @@ export async function gatherRemarks(
 export function populateRemarks(
   compileCommand: string,
   fileName: string,
-  onError: (error: string) => any
+  onError: (error: string) => any,
+  token: {
+    isCancellationRequested: boolean;
+  }
 ): Promise<Remark[]> {
   const extraFlags =
     " -c -o /dev/null  -fsave-optimization-record -foptimization-record-file=>(cat)";
@@ -113,5 +122,6 @@ export function populateRemarks(
   clangPs.on("close", (_code) => {
     /* already sent an error message */
   });
-  return gatherRemarks(clangPs.stdout, fileName);
+
+  return gatherRemarks(clangPs, fileName, token);
 }
