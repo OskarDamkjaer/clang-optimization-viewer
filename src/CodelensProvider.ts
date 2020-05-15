@@ -19,8 +19,14 @@ const stmtToTitle = {
 async function getAST(
   doc: vscode.TextDocument
 ): Promise<[LensTemplate[], string]> {
-  const findFunctionDecls = spawn("./find-function-decls", [doc.fileName], {
+  console.error(`cd ${__dirname} ./find-decls-linux ${doc.fileName}`);
+  const findFunctionDecls = spawn("./find-decls-linux ", [doc.fileName], {
     cwd: __dirname,
+  });
+
+  findFunctionDecls.on("error", (data) => {
+    console.log(data.toString());
+    vscode.window.showErrorMessage(data.toString());
   });
 
   findFunctionDecls.stderr.on("data", (data) => {
@@ -103,6 +109,8 @@ export class CodelensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
+    vscode.window.showInformationMessage("start building ast");
+
     const [lensTemplates, compileCommand] = await getAST(document);
 
     return lensTemplates.map(

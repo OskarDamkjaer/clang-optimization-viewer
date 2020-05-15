@@ -113,10 +113,14 @@ export function populateRemarks(
   }
 ): Promise<Remark[]> {
   const extraFlags =
-    " -c -o /dev/null  -fsave-optimization-record -foptimization-record-file=>(cat)";
+    " -c -o /dev/null -fsave-optimization-record -foptimization-record-file=>(cat)";
+
   const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
     shell: "bash",
   });
+
+  onError(`${compileCommand} ${extraFlags}`);
+
   clangPs.stderr.on("data", onError);
 
   clangPs.on("close", (_code) => {

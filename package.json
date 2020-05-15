@@ -2,7 +2,7 @@
   "name": "opt-info",
   "displayName": "Clang Optimization Viewer",
   "description": "Show optimization remarks from clang right in your editor.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "publisher": "damkjaer",
   "preview": true,
   "engines": {

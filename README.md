@@ -1,3 +1,4 @@
+# NOT READY FOR OUTSIDE USERS
 # Get optimization remarks from clang directly in your source code
 
 # Requirements
