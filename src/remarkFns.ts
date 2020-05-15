@@ -119,7 +119,7 @@ export function populateRemarks(
     shell: "bash",
   });
 
-  onError(`${compileCommand} ${extraFlags}`);
+  console.error(`${compileCommand} ${extraFlags}`);
 
   clangPs.stderr.on("data", onError);
 

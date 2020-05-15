@@ -19,9 +19,8 @@ const stmtToTitle = {
 async function getAST(
   doc: vscode.TextDocument
 ): Promise<[LensTemplate[], string]> {
-  console.error(`cd ${__dirname} ./find-decls-linux ${doc.fileName}`);
-  const findFunctionDecls = spawn("./find-decls-linux ", [doc.fileName], {
-    cwd: __dirname,
+  const findFunctionDecls = spawn("./find-decls-linux", [doc.fileName], {
+    cwd: __dirname, shell: true
   });
 
   findFunctionDecls.on("error", (data) => {
