@@ -112,16 +112,17 @@ export function populateRemarks(
     isCancellationRequested: boolean;
   }
 ): Promise<Remark[]> {
+  const exports = "export PATH=/home/coder/clang_10.0.0/bin:$PATH;export LD_LIBRARY_PATH=/home/coder/clang_10.0.0/lib:$LD_LIBRARY_PATH;"
   const extraFlags =
     " -c -o /dev/null -fsave-optimization-record -foptimization-record-file=>(cat)";
 
-  const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
+  const clangPs = spawn(`(${exports} ${compileCommand} ${extraFlags})`, {
     shell: "bash",
   });
 
-  console.error(`${compileCommand} ${extraFlags}`);
-
   clangPs.stderr.on("data", onError);
+  clangPs.on("error", onError);
+
 
   clangPs.on("close", (_code) => {
     /* already sent an error message */

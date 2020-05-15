@@ -108,8 +108,6 @@ export class CodelensProvider implements vscode.CodeLensProvider {
     document: vscode.TextDocument,
     _token: vscode.CancellationToken
   ): Promise<vscode.CodeLens[]> {
-    vscode.window.showInformationMessage("start building ast");
-
     const [lensTemplates, compileCommand] = await getAST(document);
 
     return lensTemplates.map(

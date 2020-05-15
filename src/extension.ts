@@ -125,7 +125,6 @@ export async function handleCodeLens(
 
 export function activate(context: vscode.ExtensionContext) {
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
-  vscode.window.showInformationMessage("activated");
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.hideRemarks", () =>
@@ -137,8 +136,6 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "extension.addRemark",
       async (range, command) => {
-        vscode.window.showInformationMessage("start compile for remarks");
-
         const doc = getDocumentOrWarn();
         if (!doc) {
           return;
@@ -186,7 +183,6 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   vscode.workspace.onDidSaveTextDocument((savedDoc: vscode.TextDocument) => {
-    vscode.window.showInformationMessage("saved");
     const activeDoc = vscode.window.activeTextEditor?.document;
     if (
       activeDoc &&
