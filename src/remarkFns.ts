@@ -116,7 +116,11 @@ export function populateRemarks(
   const extraFlags =
     " -c -o /dev/null -fsave-optimization-record -foptimization-record-file=>(cat)";
 
-  const clangPs = spawn(`(${exports} ${compileCommand} ${extraFlags})`, {
+  /*const clangPs = spawn(`(${exports} ${compileCommand} ${extraFlags})`, {
+    shell: "bash",
+  });*/
+
+  const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
     shell: "bash",
   });
 

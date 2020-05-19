@@ -206,6 +206,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
+    if(!process.env.CTRL) {
   vscode.languages.registerCodeLensProvider(
     [
       { scheme: "file", language: "c" },
@@ -213,6 +214,7 @@ export function activate(context: vscode.ExtensionContext) {
     ],
     new CodelensProvider()
   );
+    }
 }
 
 function uniq(list: any[]) {
