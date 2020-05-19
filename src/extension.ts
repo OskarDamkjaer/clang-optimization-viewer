@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
 import { Remark, populateRemarks } from "./remarkFns";
 import { CodelensProvider } from "./CodelensProvider";
-import { appendFile, writeFile, write } from "fs";
+import { appendFile, writeFile } from "fs";
 import { homedir } from "os";
+import { basename } from "path";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
 type RemarkCache = null | { file: string; remarks: Remark[] };
@@ -141,12 +142,12 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "extension.addRemark",
-      async (range, command) => {
+      async (range: vscode.Range, command) => {
         const doc = getDocumentOrWarn();
         if (!doc) {
           return;
         }
-        log(`code lens in ${doc.fileName} clicked at ${range.line}`);
+        log(`code lens in ${doc.fileName} clicked at ${range.start.line}`);
 
         if (currentlyWorkingOn) {
           const sameFile = currentlyWorkingOn.file === doc.fileName;
@@ -236,11 +237,11 @@ export function log(msg: string) {
 }
 
 export function copyFile(doc: vscode.TextDocument) {
-  const newName = `${doc.fileName}-${new Date().toISOString()}`;
-  appendFile(
+  const newName = `${basename(doc.fileName)}-${new Date().toISOString()}`;
+  writeFile(
     `${homedir()}/.opt-logs/${newName}`,
     doc.getText(),
     (e) => e && console.log(e)
   );
-  log(`user saved: ${doc.fileName} was copied as ${newName}`);
+  log(`user saved: ${basename(doc.fileName)} was copied as ${newName}`);
 }
