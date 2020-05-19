@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
 import { Remark, populateRemarks } from "./remarkFns";
 import { CodelensProvider } from "./CodelensProvider";
+import { appendFile, writeFile, write } from "fs";
+import { homedir } from "os";
 
 const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
 type RemarkCache = null | { file: string; remarks: Remark[] };
@@ -91,6 +93,7 @@ async function populateRemarksWithProgress(
 
 function onError(data: string): void {
   vscode.window.showErrorMessage(`Compilation failed:\n ${data}`);
+  log(`extension error:${data}`);
 }
 
 export async function handleCodeLens(
@@ -107,9 +110,11 @@ export async function handleCodeLens(
 
   const possibleRemarks = uniq(remarksInScope.map((r) => r.Pass));
 
+  log(`quick pick shown with options: ${possibleRemarks.join(":")}`);
   const chosen = await vscode.window.showQuickPick(
     [possibleRemarks.length === 0 ? NONE : ALL].concat(possibleRemarks)
   );
+  log(`picked: ${chosen}`);
 
   if (!chosen || chosen === NONE) {
     return null;
@@ -125,6 +130,7 @@ export async function handleCodeLens(
 
 export function activate(context: vscode.ExtensionContext) {
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
+  log("extension activated");
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.hideRemarks", () =>
@@ -140,6 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (!doc) {
           return;
         }
+        log(`code lens in ${doc.fileName} clicked at ${range.line}`);
 
         if (currentlyWorkingOn) {
           const sameFile = currentlyWorkingOn.file === doc.fileName;
@@ -190,6 +197,7 @@ export function activate(context: vscode.ExtensionContext) {
         activeDoc.fileName.toLowerCase().endsWith(ending)
       )
     ) {
+      copyFile(activeDoc);
       if (savedDoc.fileName === activeDoc.fileName) {
         remarkCache = null;
         issues.clear();
@@ -211,3 +219,28 @@ function uniq(list: any[]) {
 }
 
 export function deactivate() {}
+
+export function log(msg: string) {
+  const timeStamp = new Date().toISOString();
+  const onerror = (e: NodeJS.ErrnoException | null) => {
+    if (e) {
+      appendFile(
+        homedir() + "/.opt-logs/errorlog",
+        e + "\n",
+        (e) => e && console.log(e)
+      );
+    }
+  };
+
+  appendFile(homedir() + "/.opt-logs/log", `${timeStamp}:${msg}\n`, onerror);
+}
+
+export function copyFile(doc: vscode.TextDocument) {
+  const newName = `${doc.fileName}-${new Date().toISOString()}`;
+  appendFile(
+    `${homedir()}/.opt-logs/${newName}`,
+    doc.getText(),
+    (e) => e && console.log(e)
+  );
+  log(`user saved: ${doc.fileName} was copied as ${newName}`);
+}
