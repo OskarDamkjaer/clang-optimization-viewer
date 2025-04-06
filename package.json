@@ -3,7 +3,7 @@
   "displayName": "Clang Optimization Viewer",
   "description": "Show optimization remarks from clang right in your editor.",
   "icon": "icon.png",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "publisher": "damkjaer",
   "preview": true,
   "engines": {
