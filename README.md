@@ -21,4 +21,5 @@ Make has no built in way to generate a compilation database but you can generate
 
 ### Disclaimers
 
-- Windows is not supported
+- Windows likely doesn't work, who knows (email me if you try it and happens to work)
+- Built in great haste, contributions welcome
