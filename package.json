@@ -3,13 +3,13 @@
   "displayName": "Clang Optimization Viewer",
   "description": "Show optimization remarks from clang right in your editor.",
   "icon": "icon.png",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "publisher": "damkjaer",
   "preview": true,
   "engines": {
     "vscode": "^1.41.0"
   },
-  "repository": "https://github.com/OskarDamkjaer/opt-info",
+  "repository": "https://github.com/OskarDamkjaer/clang-optimization-viewer",
   "categories": [
     "Other"
   ],
