@@ -1,13 +1,14 @@
-# NOT READY FOR OUTSIDE USERS
 # Get optimization remarks from clang directly in your source code
 
-# Requirements
+## This extension is still in preview and may not function
 
-## A recent version of clang
+Setup:
 
-Tested with clang 9 and 10.
+- Ensure you have a `compile_commands.json`, see "Compilation Database" for instructions
+- Make sure clang is installed and available in your path (if not in path, you can use a setting)
+- If you get errors about libclang, configure the correct path for this in the settings
 
-## A compilation database
+### Compilation database
 
 The tool needs to know how to compile your code and it does so using a compilation database. You can read about what they are and how to create them [here](https://sarcasm.github.io/notes/dev/compilation-database.html).
 
@@ -18,6 +19,6 @@ Make has no built in way to generate a compilation database but you can generate
 `pip install compiledb`
 `compiledb make`
 
-## A linux or mac computer
+### Disclaimers
 
-Currently the tool does not support on windows.
+- Windows is not supported

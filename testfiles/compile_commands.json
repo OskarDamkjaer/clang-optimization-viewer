@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "/Users/oskardamkjaer/opt-info",
+    "arguments": ["c++", "-c", "-o", "file.o", "-O3", "file.cpp"],
+    "file": "/Users/oskardamkjaer/opt-info/file.cpp"
+  }
+]

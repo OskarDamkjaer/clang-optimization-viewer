@@ -23,7 +23,22 @@
         "command": "extension.hideRemarks",
         "title": "Opt Info: Hide all remarks"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Opt Info",
+      "properties": {
+        "opt-info.libClangDir": {
+          "type": "string",
+          "default": "",
+          "description": "Path to directory containing libclang.[so|dylib|dll]. Does not need to be set if libclang is in a system library directory."
+        },
+        "opt-info.clangPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to clang binary. Does not need to be set if clang is in the $PATH variable."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run compile",

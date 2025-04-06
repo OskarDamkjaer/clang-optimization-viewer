@@ -14,6 +14,7 @@
   "typescript.tsc.autoDetect": "off",
   "files.associations": {
     "*.eex": "HTML (Eex)",
-    "error.h": "c"
+    "error.h": "c",
+    "iostream": "cpp"
   }
 }

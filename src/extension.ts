@@ -1,11 +1,17 @@
 import * as vscode from "vscode";
 import { Remark, populateRemarks } from "./remarkFns";
 import { CodelensProvider } from "./CodelensProvider";
-import { appendFile, writeFile } from "fs";
-import { homedir } from "os";
-import { basename } from "path";
 
-const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp"];
+// Create an output channel for logging
+const outputChannel = vscode.window.createOutputChannel('Opt Info');
+
+export type CompileCommand = {
+  directory: string,
+  file: string,
+  command: string
+};
+
+const fileExtensions = [".c", ".cpp", ".cc", ".c++", ".cxx", ".cp", ".m"];
 type RemarkCache = null | { file: string; remarks: Remark[] };
 type Work = null | { file: string; range: vscode.Range };
 let remarkCache: RemarkCache = null;
@@ -65,7 +71,7 @@ function getDocumentOrWarn(): vscode.TextDocument | null {
 
 async function populateRemarksWithProgress(
   doc: vscode.TextDocument,
-  command: string
+  command: CompileCommand,
 ): Promise<RemarkCache> {
   return await vscode.window.withProgress(
     {
@@ -76,7 +82,6 @@ async function populateRemarksWithProgress(
     async (_progress, token) => {
       const remarks = await populateRemarks(
         command,
-        doc.uri.fsPath,
         onError,
         token
       );
@@ -129,9 +134,14 @@ export async function handleCodeLens(
   return remarkToDiagnostic(uri, relevantRemarks);
 }
 
+export let ctx: vscode.ExtensionContext;
 export function activate(context: vscode.ExtensionContext) {
   const issues = vscode.languages.createDiagnosticCollection("opt-info");
-  log("extension activated");
+  log("Extension activated");
+  ctx = context;
+
+  // Add the output channel to subscriptions so it gets disposed when extension is deactivated
+  context.subscriptions.push(outputChannel);
 
   context.subscriptions.push(
     vscode.commands.registerCommand("extension.hideRemarks", () =>
@@ -198,7 +208,6 @@ export function activate(context: vscode.ExtensionContext) {
         activeDoc.fileName.toLowerCase().endsWith(ending)
       )
     ) {
-      copyFile(activeDoc);
       if (savedDoc.fileName === activeDoc.fileName) {
         remarkCache = null;
         issues.clear();
@@ -206,44 +215,27 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
 
-    if(!process.env.CTRL) {
-  vscode.languages.registerCodeLensProvider(
-    [
-      { scheme: "file", language: "c" },
-      { scheme: "file", language: "cpp" },
-    ],
-    new CodelensProvider()
-  );
-    }
+  if (!process.env.CTRL) {
+    vscode.languages.registerCodeLensProvider(
+      [
+        { scheme: "file", language: "c" },
+        { scheme: "file", language: "cpp" },
+        { scheme: "file", language: "objective-c" },
+        { scheme: "file", language: "objective-cpp" },
+      ],
+      new CodelensProvider()
+    );
+  }
 }
 
 function uniq(list: any[]) {
   return Array.from(new Set(list));
 }
 
-export function deactivate() {}
+export function deactivate() { }
 
 export function log(msg: string) {
-  const timeStamp = new Date().toISOString();
-  const onerror = (e: NodeJS.ErrnoException | null) => {
-    if (e) {
-      appendFile(
-        homedir() + "/.opt-logs/errorlog",
-        e + "\n",
-        (e) => e && console.log(e)
-      );
-    }
-  };
-
-  appendFile(homedir() + "/.opt-logs/log", `${timeStamp}:${msg}\n`, onerror);
-}
-
-export function copyFile(doc: vscode.TextDocument) {
-  const newName = `${basename(doc.fileName)}-${new Date().toISOString()}`;
-  writeFile(
-    `${homedir()}/.opt-logs/${newName}`,
-    doc.getText(),
-    (e) => e && console.log(e)
-  );
-  log(`user saved: ${basename(doc.fileName)} was copied as ${newName}`);
+  outputChannel.appendLine(msg);
+  // Also log to console for debugging
+  console.log(`[Opt Info] ${msg}`);
 }

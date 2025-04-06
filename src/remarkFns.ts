@@ -3,6 +3,8 @@ import * as path from "path";
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { createInterface } from "readline";
 import { once } from "events";
+import { log, ctx, CompileCommand } from "./extension";
+import * as vscode from "vscode";
 
 export type RemarkType = "Missed" | "Passed" | "Analysis";
 export type Remark = {
@@ -105,23 +107,17 @@ export async function gatherRemarks(
 }
 
 export function populateRemarks(
-  compileCommand: string,
-  fileName: string,
+  compileCommand: CompileCommand,
   onError: (error: string) => any,
   token: {
     isCancellationRequested: boolean;
   }
 ): Promise<Remark[]> {
-  const exports = "export PATH=/home/coder/clang_10.0.0/bin:$PATH;export LD_LIBRARY_PATH=/home/coder/clang_10.0.0/lib:$LD_LIBRARY_PATH;"
   const extraFlags =
     " -c -o /dev/null -fsave-optimization-record -foptimization-record-file=>(cat)";
 
-  /*const clangPs = spawn(`(${exports} ${compileCommand} ${extraFlags})`, {
-    shell: "bash",
-  });*/
-
-  const clangPs = spawn(`${compileCommand} ${extraFlags}`, {
-    shell: "bash",
+  const clangPs = spawn(`${compileCommand.command} ${extraFlags}`, {
+    shell: "bash", cwd: vscode.workspace.workspaceFolders![0].uri.path,
   });
 
   clangPs.stderr.on("data", onError);
@@ -132,5 +128,5 @@ export function populateRemarks(
     /* already sent an error message */
   });
 
-  return gatherRemarks(clangPs, fileName, token);
+  return gatherRemarks(clangPs, compileCommand.file, token);
 }
