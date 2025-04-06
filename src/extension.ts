@@ -2,8 +2,7 @@ import * as vscode from "vscode";
 import { Remark, populateRemarks } from "./remarkFns";
 import { CodelensProvider } from "./CodelensProvider";
 
-// Create an output channel for logging
-const outputChannel = vscode.window.createOutputChannel('Opt Info');
+const outputChannel = vscode.window.createOutputChannel('Clang Optimization Remarks');
 
 export type CompileCommand = {
   directory: string,
@@ -140,7 +139,6 @@ export function activate(context: vscode.ExtensionContext) {
   log("Extension activated");
   ctx = context;
 
-  // Add the output channel to subscriptions so it gets disposed when extension is deactivated
   context.subscriptions.push(outputChannel);
 
   context.subscriptions.push(
@@ -236,6 +234,5 @@ export function deactivate() { }
 
 export function log(msg: string) {
   outputChannel.appendLine(msg);
-  // Also log to console for debugging
   console.log(`[Opt Info] ${msg}`);
 }

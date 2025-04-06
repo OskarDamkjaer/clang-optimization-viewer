@@ -9,8 +9,8 @@ import { log, ctx, CompileCommand } from "./extension";
 
 type LensTemplate = {
   kind: "FunctionDecl" | "FunctionTemplate" | "ObjCInstanceMethodDecl" | "CXXMethod"
-      | "Constructor" | "Destructor" | "ConversionFunction" | "LambdaExpr" | "WhileStmt"
-      | "DoStmt" | "ForStmt" | "CXXForRangeStmt"
+  | "Constructor" | "Destructor" | "ConversionFunction" | "LambdaExpr" | "WhileStmt"
+  | "DoStmt" | "ForStmt" | "CXXForRangeStmt"
   range: vscode.Range;
 };
 
@@ -72,12 +72,12 @@ async function selectCompileCommandsDir(doc: vscode.TextDocument): Promise<strin
     if (compileCommandPath) {
       return path.dirname(compileCommandPath);
     }
-  } catch {}
+  } catch { }
   try {
     // (2)
     await fs.access(path.join(rootDir, "compile_commands.json"), fsConstants.F_OK);
     return rootDir;
-  } catch {}
+  } catch { }
   try {
     // (3)
     const files = await fs.readdir(rootDir);
@@ -93,7 +93,7 @@ async function selectCompileCommandsDir(doc: vscode.TextDocument): Promise<strin
       }
       return file;
     }
-  } catch {}
+  } catch { }
   try {
     // (4)
     var filePath = doc.uri.path;
@@ -107,7 +107,7 @@ async function selectCompileCommandsDir(doc: vscode.TextDocument): Promise<strin
       }
       return dir;
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -225,7 +225,7 @@ async function getASTSlow(
   }
 
   logDoc("info: successful slow path", doc);
-  return [ranges, { command: cmd, directory: compileCommandsDir, file: doc.fileName }];
+  return [ranges, { command: cmd, directory: command.directory, file: doc.fileName }];
 }
 
 function parsePosStrings(s: string): vscode.Range {
@@ -276,7 +276,6 @@ async function getAST(
     await fs.access(path.join(__dirname, findDecls), fsConstants.F_OK);
   } catch {
     const message = `${path.join(__dirname, findDecls)} not found - platform may be unsupported. Falling back to slow path.`;
-    console.log(message);
     log(message);
     if (ctx.globalState.get("warn-find-decls-not-found", true)) {
       vscode.window.showWarningMessage(message, "Don't show again").then(action => {
@@ -319,7 +318,13 @@ async function getAST(
     return getASTSlow(doc, compileCommandsDir);
   }
 
-  return [ranges, {command: compileCommand!, directory: compileCommandsDir, file: doc.fileName}];
+  const compileCommandsPath = path.join(compileCommandsDir, "compile_commands.json");
+  const compileCommandsContent = await fs.readFile(compileCommandsPath);
+  const compileCommands = JSON.parse(compileCommandsContent.toString("utf-8"));
+  const command = findCompileCommand(compileCommands, doc);
+
+
+  return [ranges, { command: compileCommand!, directory: command?.directory ?? compileCommandsDir, file: doc.fileName }];
 }
 
 function startsWithCapitalLetter(s: string): boolean {

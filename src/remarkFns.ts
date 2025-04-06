@@ -3,8 +3,7 @@ import * as path from "path";
 import { spawn, ChildProcessWithoutNullStreams } from "child_process";
 import { createInterface } from "readline";
 import { once } from "events";
-import { log, ctx, CompileCommand } from "./extension";
-import * as vscode from "vscode";
+import { log, CompileCommand } from "./extension";
 
 export type RemarkType = "Missed" | "Passed" | "Analysis";
 export type Remark = {
@@ -32,7 +31,7 @@ export function yaml2obj(raw: string[]): Remark | null {
     !Args ||
     (Type !== "Missed" && Type !== "Passed" && Type !== "Analysis")
   ) {
-    //console.error("incomplete remark", parsed);
+    log("incomplete remark " + JSON.stringify(parsed));
     return null;
   }
   return { DebugLoc, Function, Name, Pass, Type, Args };
@@ -67,12 +66,12 @@ export async function gatherRemarks(
       const fileNameFinder = /File: (.*?(?=,))/;
       const match = line.match(fileNameFinder);
       if (!match) {
-        console.error("No match", line);
+        log("No match " + line);
       } else {
         const file = match[1].replace(/'/g, "");
 
         if (!file) {
-          console.log("no file", line);
+          log("no file " + line);
         }
 
         if (
@@ -80,10 +79,6 @@ export async function gatherRemarks(
           path.basename(file) !== path.basename(relevantFile)
         ) {
           isRelevantRemark = false;
-          // TODO we need to check for more endings
-          if (file.endsWith(".cpp")) {
-            console.log("should match?", file, relevantFile);
-          }
         }
       }
     }
