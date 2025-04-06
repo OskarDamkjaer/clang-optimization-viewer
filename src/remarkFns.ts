@@ -117,7 +117,7 @@ export function populateRemarks(
     " -c -o /dev/null -fsave-optimization-record -foptimization-record-file=>(cat)";
 
   const clangPs = spawn(`${compileCommand.command} ${extraFlags}`, {
-    shell: "bash", cwd: vscode.workspace.workspaceFolders![0].uri.path,
+    shell: "bash", cwd: compileCommand.directory,
   });
 
   clangPs.stderr.on("data", onError);
